@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>채보 트레이너</title>
+<style>
+:root{
+  --bg:#0c1116;--surface:#18212a;--surface2:#212c36;--raised:#26333f;
+  --line:rgba(255,255,255,.12);--line2:rgba(255,255,255,.22);
+  --text:#f4f8f9;--body:#dbe4e8;--muted:#a7b4bc;--faint:#75818b;
+  --mint:#6fe9cd;--mint2:#3cc4a4;--coral:#ff8575;--amber:#f5d18f;--slate:#a2b3de;--plum:#c9a3e0;
+  --mono:ui-monospace,'SF Mono','Roboto Mono',monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--body);
+  font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+  font-size:16px;-webkit-font-smoothing:antialiased;line-height:1.6;letter-spacing:-.003em;}
+.wrap{max-width:620px;margin:0 auto;padding:20px 16px 72px;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+
+header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;}
+header h1{font-size:1.55rem;font-weight:800;margin:0;letter-spacing:-.02em;color:var(--text);}
+header h1 b{color:var(--mint);}
+header .sub{font-size:.76rem;color:var(--muted);font-family:var(--mono);font-weight:600;}
+
+.prog{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 17px;margin-bottom:14px;}
+.prog-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+.prog-pct{font-size:1.6rem;font-weight:800;font-family:var(--mono);color:var(--mint);letter-spacing:-.02em;}
+.prog-pct small{font-size:.78rem;color:var(--muted);font-weight:600;margin-left:5px;}
+.prog-stats{display:flex;gap:14px;font-size:.78rem;color:var(--muted);font-family:var(--mono);font-weight:600;}
+.prog-stats b{color:var(--text);font-weight:800;}
+.bar{height:8px;background:var(--surface2);border-radius:5px;overflow:hidden;}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--mint2),var(--mint));border-radius:5px;transition:width .5s;}
+
+.map-h{font-size:.75rem;color:var(--muted);font-family:var(--mono);letter-spacing:.08em;margin:20px 2px 10px;text-transform:uppercase;font-weight:700;}
+.map-h.sanjo{color:var(--amber);}
+.stg{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:13px 14px;margin-bottom:8px;transition:transform .1s;width:100%;text-align:left;}
+.stg:active{transform:scale(.985);}
+.stg .num{width:32px;height:32px;flex:0 0 auto;border-radius:9px;background:var(--surface2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.82rem;font-weight:800;color:var(--muted);}
+.stg .txt{flex:1;min-width:0;}
+.stg .t{font-size:.96rem;font-weight:700;color:var(--text);letter-spacing:-.01em;}
+.stg .d{font-size:.76rem;color:var(--muted);margin-top:2px;}
+.stg .chk{font-size:.9rem;color:var(--faint);}
+.stg.done .num{background:var(--mint);border-color:var(--mint);color:#0a1013;}
+.stg.done .chk{color:var(--mint);}
+.stg.sanjo .num{border-color:rgba(245,209,143,.5);color:var(--amber);}
+.stg.sanjo.done .num{background:var(--amber);border-color:var(--amber);color:#0a1013;}
+
+.refbtn{display:block;width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:13px;padding:13px;text-align:center;font-size:.9rem;font-weight:700;color:var(--body);margin-top:14px;}
+
+#lesson{display:none;}
+.back{font-size:.88rem;color:var(--muted);padding:8px 0;margin-bottom:4px;font-weight:600;}
+.l-head{margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid var(--line);}
+.l-day{font-size:.7rem;color:var(--mint);font-family:var(--mono);letter-spacing:.1em;font-weight:700;}
+.l-day.sanjo{color:var(--amber);}
+.l-t{font-size:1.4rem;font-weight:800;margin:5px 0 8px;letter-spacing:-.015em;color:var(--text);line-height:1.25;}
+.l-lead{font-size:.95rem;color:var(--body);line-height:1.65;}
+
+.sec{margin-bottom:24px;}
+.sec-h{display:flex;align-items:center;gap:9px;font-size:.93rem;font-weight:800;color:var(--text);margin-bottom:11px;}
+.sec-h .n{width:23px;height:23px;border-radius:50%;background:var(--mint);color:#0a1013;display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:800;font-family:var(--mono);flex:0 0 auto;}
+.sec-h .n.a{background:var(--amber);}
+.sec p{margin:0 0 10px;font-size:.93rem;line-height:1.68;}
+.sec b{color:var(--text);}
+
+.ctbl{width:100%;border-collapse:collapse;margin:10px 0 12px;font-size:.83rem;}
+.ctbl th{background:var(--surface2);color:var(--muted);font-weight:700;text-align:left;padding:7px 9px;border:1px solid var(--line);font-size:.76rem;}
+.ctbl td{padding:7px 9px;border:1px solid var(--line);color:var(--body);vertical-align:top;}
+.ctbl td b{color:var(--mint);}
+
+.cnote{background:rgba(111,233,205,.09);border-left:3px solid var(--mint);border-radius:0 9px 9px 0;padding:11px 13px;font-size:.86rem;line-height:1.6;margin:12px 0;}
+.cnote.a{background:rgba(245,209,143,.09);border-left-color:var(--amber);}
+.cnote b{color:var(--text);}
+
+.cex{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px;margin:12px 0;}
+.cex-t{font-size:.8rem;font-weight:700;color:var(--muted);margin-bottom:9px;}
+.cex-btns{display:flex;flex-wrap:wrap;gap:7px;}
+.cex-b{background:var(--surface2);border:1px solid var(--line2);border-radius:8px;padding:8px 13px;font-size:.83rem;font-weight:700;color:var(--body);}
+.cex-b:active{background:var(--raised);}
+.cex-d{font-size:.79rem;color:var(--muted);margin-top:9px;line-height:1.55;}
+
+/* staff */
+.staffbox{background:#f7f9fa;border-radius:11px;padding:8px 4px;margin:11px 0;overflow-x:auto;}
+.staffbox svg{display:block;margin:0 auto;}
+.stf-line{stroke:#2a3138;stroke-width:1.1;}
+.stf-bar{stroke:#2a3138;stroke-width:1.4;}
+.stf-note{fill:#12181d;}
+.stf-note.sel{fill:var(--mint2);}
+.stf-note.ok{fill:#1f9e7a;}
+.stf-note.no{fill:#d9503c;}
+.stf-note.hol{fill:none;stroke:#12181d;stroke-width:1.5;}
+.stf-note.hol.ok{stroke:#1f9e7a;fill:none;}
+.stf-note.hol.no{stroke:#d9503c;fill:none;}
+.stf-flag{fill:none;stroke:#12181d;stroke-width:1.4;}
+.stf-flag.ok{stroke:#1f9e7a;}
+.stf-flag.no{stroke:#d9503c;}
+.stf-stem{stroke:#12181d;stroke-width:1.5;}
+.stf-stem.ok{stroke:#1f9e7a;}.stf-stem.no{stroke:#d9503c;}
+.stf-txt{fill:#12181d;font-family:Georgia,serif;}
+.stf-hit{fill:transparent;}
+.stf-hit:active{fill:rgba(60,196,164,.22);}
+.stf-lab{fill:#5c6670;font-size:8px;font-family:ui-monospace,monospace;}
+.stf-ges{stroke:#c0392b;stroke-width:1.3;fill:none;}
+.stf-gtx{fill:#c0392b;font-size:8.5px;font-weight:700;font-family:ui-monospace,monospace;}
+
+/* drill */
+.drill{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px;margin:12px 0;}
+.dr-q{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:11px;line-height:1.5;}
+.dr-play{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+.dr-pb{background:var(--mint);color:#0a1013;border-radius:9px;padding:9px 15px;font-size:.87rem;font-weight:800;}
+.dr-pb.sec2{background:var(--surface2);color:var(--body);border:1px solid var(--line2);}
+.dr-opts{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.dr-opts.one{grid-template-columns:1fr;}
+.dr-o{background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:11px 9px;font-size:.86rem;font-weight:700;color:var(--body);text-align:center;}
+.dr-o:active{background:var(--raised);}
+.dr-o.ok{background:rgba(63,196,164,.25);border-color:var(--mint);color:var(--mint);}
+.dr-o.no{background:rgba(255,133,117,.2);border-color:var(--coral);color:var(--coral);}
+.dr-r{font-size:.85rem;font-weight:700;margin-top:11px;min-height:1.2em;line-height:1.5;}
+.dr-r.ok{color:var(--mint);}.dr-r.no{color:var(--coral);}
+.dr-score{font-size:.75rem;color:var(--muted);font-family:var(--mono);font-weight:600;margin-top:9px;}
+
+/* dictation */
+.dict{background:var(--surface);border:1px solid var(--line2);border-radius:14px;padding:15px;margin:12px 0;}
+.dt-h{font-size:.93rem;font-weight:800;color:var(--text);margin-bottom:4px;}
+.dt-meta{font-size:.77rem;color:var(--muted);font-family:var(--mono);margin-bottom:11px;}
+.dt-tools{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
+.dt-t{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.8rem;font-weight:700;color:var(--muted);min-width:38px;text-align:center;}
+.dt-t.on{background:var(--mint);border-color:var(--mint);color:#0a1013;}
+.dt-grp{font-size:.7rem;color:var(--faint);font-family:var(--mono);letter-spacing:.06em;margin:9px 0 4px;text-transform:uppercase;font-weight:700;}
+.dt-act{display:flex;gap:7px;margin-top:11px;}
+.dt-a{flex:1;background:var(--surface2);border:1px solid var(--line2);border-radius:9px;padding:10px;font-size:.85rem;font-weight:700;color:var(--body);text-align:center;}
+.dt-a.main{background:var(--mint);border-color:var(--mint);color:#0a1013;font-weight:800;}
+.dt-r{font-size:.85rem;font-weight:700;margin-top:11px;line-height:1.55;}
+.dt-r.ok{color:var(--mint);}.dt-r.no{color:var(--coral);}
+.dt-ans{margin-top:9px;}
+.dt-ans .lab{font-size:.75rem;color:var(--muted);font-family:var(--mono);margin-bottom:4px;font-weight:700;}
+
+.donebtn{display:block;width:100%;background:var(--mint);color:#0a1013;font-size:.97rem;font-weight:800;border-radius:11px;padding:13px;text-align:center;margin-top:22px;}
+.donebtn.off{background:var(--surface2);color:var(--muted);}
+
+/* ref */
+.ref-nav{display:flex;gap:6px;overflow-x:auto;margin-bottom:13px;padding-bottom:3px;}
+.ref-nav button{flex:0 0 auto;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:.79rem;font-weight:700;color:var(--muted);white-space:nowrap;}
+.ref-nav button.on{background:var(--mint);border-color:var(--mint);color:#0a1013;}
+.ref-cat{font-size:.79rem;color:var(--mint);font-weight:800;margin:15px 0 7px;font-family:var(--mono);letter-spacing:.05em;}
+.ref-list{list-style:none;padding:0;margin:0;}
+.ref-list li{display:flex;gap:11px;padding:8px 2px;border-bottom:1px solid var(--line);font-size:.85rem;}
+.ref-list .term{flex:0 0 34%;font-weight:700;color:var(--text);}
+.ref-list .desc{flex:1;color:var(--muted);line-height:1.5;}
+.tog{display:flex;gap:6px;margin:10px 0;}
+.tog button{flex:1;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:.81rem;font-weight:700;color:var(--muted);}
+.tog button.on{background:var(--amber);border-color:var(--amber);color:#0a1013;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="home">
+    <header>
+      <h1>채보 <b>트레이너</b></h1>
+      <div class="sub">DICTATION</div>
+    </header>
+    <div class="prog">
+      <div class="prog-top">
+        <div class="prog-pct" id="pPct">0<small>%</small></div>
+        <div class="prog-stats"><span>완료 <b id="pDone">0</b>/16</span><span>서양 <b id="pW">0</b>/11</span><span>산조 <b id="pS">0</b>/5</span></div>
+      </div>
+      <div class="bar"><i id="pBar" style="width:0%"></i></div>
+    </div>
+    <div class="map-h">서양 채보 나선 · 1~11</div>
+    <div id="mapW"></div>
+    <div class="map-h sanjo">산조 채보 트랙 · S1~S5</div>
+    <div id="mapS"></div>
+    <button class="refbtn" data-t="ref" onclick="openRef('yul')">참고 사전 — 율명 · 장단 · 음정 · 기호</button>
+  </div>
+  <div id="lesson"><div id="lessonBody"></div></div>
+</div>
+<script>
+/* ══ 오디오 엔진 ══ */
+var AC=null;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC;}
+var SEMI={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+var LETS=['C','D','E','F','G','A','B'];
+function midiOf(n){return 12*(n.oct+1)+SEMI[n.let]+(n.acc||0);}
+function freqOf(m){return 440*Math.pow(2,(m-69)/12);}
+function dnumOf(n){return n.oct*7+LETS.indexOf(n.let);}
+
+/* 한 음 재생. g = 시김새 {type:'bend'|'slide'|'vib', from:midi} */
+function tone(m,t0,dur,g,vol){
+  var a=ac();if(!a)return;
+  var t=a.currentTime+t0;
+  var out=a.createGain();out.connect(a.destination);
+  var v=(vol==null?0.22:vol);
+  out.gain.setValueAtTime(0.0001,t);
+  out.gain.exponentialRampToValueAtTime(v,t+0.02);
+  out.gain.setValueAtTime(v,t+Math.max(0.03,dur-0.06));
+  out.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  var parts=[[1,1],[2,0.34],[3,0.16],[4,0.07]];
+  var oscs=[];
+  for(var i=0;i<parts.length;i++){
+    var o=a.createOscillator();o.type='sine';
+    var pg=a.createGain();pg.gain.value=parts[i][1];
+    o.connect(pg);pg.connect(out);
+    var f=freqOf(m)*parts[i][0];
+    o.frequency.setValueAtTime(f,t);
+    if(g&&g.type==='bend'&&g.from!=null){
+      var f0=freqOf(g.from)*parts[i][0];
+      o.frequency.setValueAtTime(f0,t);
+      o.frequency.setValueAtTime(f0,t+dur*0.62);
+      o.frequency.exponentialRampToValueAtTime(f,t+dur*0.62+0.07);
+    }else if(g&&g.type==='slide'&&g.from!=null){
+      var s0=freqOf(g.from)*parts[i][0];
+      o.frequency.setValueAtTime(s0,t);
+      o.frequency.setValueAtTime(s0,t+dur*0.45);
+      o.frequency.exponentialRampToValueAtTime(f,t+dur*0.92);
+    }
+    o.start(t);o.stop(t+dur+0.05);oscs.push(o);
+  }
+  if(g&&g.type==='vib'){
+    var lfo=a.createOscillator();lfo.type='sine';lfo.frequency.value=(g.rate||5.2);
+    var lg=a.createGain();lg.gain.value=(g.depth||16);
+    lfo.connect(lg);
+    for(var k=0;k<oscs.length;k++)lg.connect(oscs[k].frequency);
+    lfo.start(t+dur*0.18);lfo.stop(t+dur+0.05);
+  }
+  /* 숨소리 */
+  var nb=a.createBufferSource();
+  var len=Math.floor(a.sampleRate*Math.min(dur,2));
+  if(len>0){
+    var buf=a.createBuffer(1,len,a.sampleRate),d=buf.getChannelData(0);
+    for(var j=0;j<len;j++)d[j]=(Math.random()*2-1)*0.5;
+    nb.buffer=buf;
+    var bp=a.createBiquadFilter();bp.type='bandpass';bp.frequency.value=freqOf(m)*2;bp.Q.value=1.1;
+    var ng=a.createGain();ng.gain.setValueAtTime(0.0001,t);
+    ng.gain.exponentialRampToValueAtTime(v*0.1,t+0.03);
+    ng.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    nb.connect(bp);bp.connect(ng);ng.connect(a.destination);
+    nb.start(t);nb.stop(t+dur);
+  }
+}
+function click(t0,strong){
+  var a=ac();if(!a)return;var t=a.currentTime+t0;
+  var o=a.createOscillator();o.type='square';o.frequency.value=strong?1500:1000;
+  var gn=a.createGain();gn.gain.setValueAtTime(strong?0.14:0.07,t);
+  gn.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
+  o.connect(gn);gn.connect(a.destination);o.start(t);o.stop(t+0.06);
+}
+/* 선율 재생: seq = [{n:noteObj|null, d:dur(4분=1), g:시김새}] , bpm 기준 4분음표 */
+var PLAYING=[];
+function playSeq(seq,bpm,withClick,beatsPerBar){
+  ac();var sp=60/(bpm||96),t=0.08;
+  for(var i=0;i<seq.length;i++){
+    var it=seq[i],dur=it.d*sp;
+    if(it.n)tone(midiOf(it.n),t,Math.max(0.12,dur*0.94),it.g);
+    t+=dur;
+  }
+  if(withClick){
+    var total=t,bt=0.08,k=0,bp=beatsPerBar||4;
+    while(bt<total){click(bt,k%bp===0);bt+=sp;k++;}
+  }
+  return t;
+}
+function playNotes(arr,bpm,d){var s=[];for(var i=0;i<arr.length;i++)s.push({n:arr[i],d:(d||1)});return playSeq(s,bpm||100);}
+function nt(s,oct,acc){return {let:s,oct:oct,acc:acc||0};}
+/* "C4","Eb5","F#3" 파싱 */
+function pn(str){
+  var L=str[0].toUpperCase(),i=1,acc=0;
+  while(str[i]==='b'||str[i]==='#'||str[i]==='n'){if(str[i]==='b')acc--;else if(str[i]==='#')acc++;i++;}
+  return {let:L,oct:parseInt(str.slice(i),10),acc:acc};
+}
+function pnl(s){var a=s.split(' '),r=[];for(var i=0;i<a.length;i++)if(a[i])r.push(pn(a[i]));return r;}
+
+/* ══ 오선 렌더러 ══ */
+var GAP=11,HG=GAP/2,TOP=34,LEFT=52,NW=30;
+function posOf(n){return dnumOf(n)-(4*7+2);}
+function yOf(p){return TOP+(8-p)*HG;}
+var KEYSIG={
+ 'C':[], 'G':['F'],'D':['F','C'],'A':['F','C','G'],'E':['F','C','G','D'],
+ 'F':['B'],'Bb':['B','E'],'Eb':['B','E','A'],'Ab':['B','E','A','D'],'Db':['B','E','A','D','G']
+};
+var SHARPPOS={F:8,C:5,G:9,D:6,A:3,E:7,B:4};
+var FLATPOS={B:4,E:7,A:3,D:6,G:2,C:5,F:1};
+function sigKind(k){return (k==='C')?0:(k.indexOf('b')>0||k==='F')?-1:1;}
+function accGlyph(a){return a===1?'\u266F':a===-1?'\u266D':a===0?'\u266E':a===2?'x':'';}
+
+function svgEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* items: [{n:noteObj|null(쉼표), d:dur, g:시김새, cls:'ok'|'no'|''}] */
+function renderStaff(items,opt){
+  opt=opt||{};
+  var key=opt.key||'C', ts=opt.ts||null, showLab=opt.labels;
+  var sig=KEYSIG[key]||[], kind=sigKind(key);
+  var x=LEFT+sig.length*9+(ts?22:0);
+  var W=Math.max(300,x+items.length*NW+22);
+  var H=TOP+8*HG+34;
+  var s='<svg viewBox="0 0 '+W+' '+H+'" width="'+Math.min(W,560)+'">';
+  for(var i=0;i<5;i++){var y=TOP+i*GAP;s+='<line class="stf-line" x1="14" y1="'+y+'" x2="'+(W-8)+'" y2="'+y+'"/>';}
+  s+='<text class="stf-txt" x="18" y="'+(TOP+3.6*GAP)+'" font-size="'+(GAP*4.6)+'">\uD834\uDD1E</text>';
+  var kx=LEFT-6;
+  for(var q=0;q<sig.length;q++){
+    var p=(kind<0?FLATPOS:SHARPPOS)[sig[q]];
+    s+='<text class="stf-txt" x="'+kx+'" y="'+(yOf(p)+3.5)+'" font-size="13">'+(kind<0?'\u266D':'\u266F')+'</text>';
+    kx+=9;
+  }
+  if(ts){
+    var tx=kx+5;
+    s+='<text class="stf-txt" x="'+tx+'" y="'+(TOP+1.85*GAP)+'" font-size="15" font-weight="bold" text-anchor="middle">'+ts[0]+'</text>';
+    s+='<text class="stf-txt" x="'+tx+'" y="'+(TOP+3.85*GAP)+'" font-size="15" font-weight="bold" text-anchor="middle">'+ts[1]+'</text>';
+  }
+  for(var k=0;k<items.length;k++){
+    var it=items[k],cx=x+k*NW+NW/2,cl=it.cls?(' '+it.cls):'';
+    if(!it.n){ s+=restSVG(it.d,cx); }
+    else{
+      var p=posOf(it.n),y=yOf(p);
+      for(var lp=10;lp<=p;lp+=2)s+='<line class="stf-line" x1="'+(cx-9)+'" y1="'+yOf(lp)+'" x2="'+(cx+9)+'" y2="'+yOf(lp)+'"/>';
+      for(var lp2=-2;lp2>=p;lp2-=2)s+='<line class="stf-line" x1="'+(cx-9)+'" y1="'+yOf(lp2)+'" x2="'+(cx+9)+'" y2="'+yOf(lp2)+'"/>';
+      var hollow=(it.d>=2);
+      s+='<ellipse class="stf-note'+(hollow?' hol':'')+cl+'" cx="'+cx+'" cy="'+y+'" rx="6" ry="4.4" transform="rotate(-18 '+cx+' '+y+')"/>';
+      if(it.d<4){
+        var up=(p<4),sx=up?(cx+5.6):(cx-5.6),sy=up?(y-24):(y+24);
+        s+='<line class="stf-stem'+cl+'" x1="'+sx+'" y1="'+y+'" x2="'+sx+'" y2="'+sy+'"/>';
+        var nf=(it.d<0.5?2:(it.d<1?1:0));
+        for(var f=0;f<nf;f++){
+          var fy=sy+(up?1:-1)*(f*5);
+          s+='<path class="stf-flag'+cl+'" d="M'+sx+','+fy+' q6,'+(up?5:-5)+' 5,'+(up?11:-11)+'"/>';
+        }
+      }
+      if(it.d===1.5||it.d===3||it.d===0.75||it.d===0.375)
+        s+='<circle class="stf-note'+cl+'" cx="'+(cx+11)+'" cy="'+(y-(p%2===0?4:0))+'" r="1.7"/>';
+      if(it.n.acc!==0&&it.n.acc!=null&&!inKeySig(it.n,key))
+        s+='<text class="stf-txt" x="'+(cx-15)+'" y="'+(y+4)+'" font-size="12">'+accGlyph(it.n.acc)+'</text>';
+      if(it.n.acc===0&&inKeySigLetter(it.n,key))
+        s+='<text class="stf-txt" x="'+(cx-15)+'" y="'+(y+4)+'" font-size="12">\u266E</text>';
+      if(it.g){
+        var gy=yOf(p)-(p<4?30:-30);
+        if(it.g.type==='vib')s+='<path class="stf-ges" d="M'+(cx-8)+','+(gy)+' q3,-4 6,0 q3,4 6,0 q3,-4 6,0"/>';
+        else{
+          var lbl=it.g.type==='bend'?'\u2198':'\u2198';
+          s+='<text class="stf-gtx" x="'+(cx-4)+'" y="'+gy+'">'+lbl+'</text>';
+        }
+      }
+      if(showLab)s+='<text class="stf-lab" x="'+cx+'" y="'+(TOP+8*HG+18)+'" text-anchor="middle">'+svgEsc(it.n.let+(it.n.acc>0?'#':it.n.acc<0?'b':''))+'</text>';
+    }
+  }
+  if(opt.bar!==false)s+='<line class="stf-bar" x1="'+(W-10)+'" y1="'+TOP+'" x2="'+(W-10)+'" y2="'+(TOP+4*GAP)+'"/>';
+  return s+'</svg>';
+}
+function inKeySig(n,key){var sig=KEYSIG[key]||[],kind=sigKind(key);if(sig.indexOf(n.let)<0)return false;return (kind<0&&n.acc===-1)||(kind>0&&n.acc===1);}
+function inKeySigLetter(n,key){var sig=KEYSIG[key]||[];return sig.indexOf(n.let)>=0;}
+function restSVG(d,cx){
+  var y2=TOP+GAP,y3=TOP+2*GAP;
+  if(d>=4)return '<rect class="stf-note" x="'+(cx-6)+'" y="'+(y2)+'" width="12" height="5"/>';
+  if(d>=2)return '<rect class="stf-note" x="'+(cx-6)+'" y="'+(y3-5)+'" width="12" height="5"/>';
+  if(d>=1)return '<path class="stf-note" d="M'+(cx-3)+','+(TOP+GAP*0.7)+' q6,6 1,11 q-6,4 0,10 q-6,-3 -2,-10 q-5,-5 1,-11 z"/>';
+  return '<g><circle class="stf-note" cx="'+(cx-2)+'" cy="'+(TOP+2*GAP)+'" r="2.6"/><path class="stf-stem" d="M'+(cx)+','+(TOP+2*GAP)+' L'+(cx+4)+','+(TOP+GAP*0.9)+'" fill="none"/></g>';
+}
+
+/* ══ 커리큘럼 ══ */
+var CUR=[
+{id:'w1',tr:'w',n:1,t:'오선 첫걸음',lead:'도·레·미 세 음과 4분·2분음표. 오선 위에 소리를 앉히는 첫걸음.',
+ concept:'<p>채보는 <b>귀로 들은 것을 오선에 옮기는 일</b>이에요. 처음부터 오선을 씁니다. 대신 음을 셋으로 좁혀요 — <b>도(C) 레(D) 미(E)</b>.</p>'
+ +'<p>높은음자리표에서 이 세 음의 자리는 고정이에요. <b>도=아래 첫 덧줄</b>, <b>레=오선 아래 공간</b>, <b>미=맨 아래 줄</b>.</p>'
+ +'<table class="ctbl"><tr><th>음</th><th>이름</th><th>오선 자리</th></tr><tr><td>도</td><td><b>C4</b></td><td>첫 덧줄 위</td></tr><tr><td>레</td><td><b>D4</b></td><td>오선 바로 아래</td></tr><tr><td>미</td><td><b>E4</b></td><td>맨 아래 줄</td></tr></table>'
+ +'<p>리듬은 <b>단순박자(2분박)</b>부터. 박은 4분음표 하나, 그 박이 둘로 나뉘는 세계예요.</p>'
+ +'<table class="ctbl"><tr><th>음표</th><th>길이</th></tr><tr><td>4분음표</td><td>1박</td></tr><tr><td>2분음표</td><td>2박</td></tr></table>'
+ +'<div class="cnote"><b>채보의 첫 원칙 · </b>음높이보다 <b>리듬 골격</b>을 먼저 잡으세요. 길이가 흔들리면 음을 다 맞혀도 마디가 무너져요.</div>',
+ ex:[['도 레 미','C4 D4 E4'],['미 레 도','E4 D4 C4'],['도 미 레 도','C4 E4 D4 C4']],
+ drill:{type:'hilo'},dict:{key:'C',ts:[4,4],bpm:80,pool:['C4','D4','E4'],durs:[1,2],beats:4,labels:true}},
+
+{id:'w2',tr:'w',n:2,t:'음역 넓히기',lead:'도에서 높은 도까지 온음계 전부. 8분음표와 쉼표.',
+ concept:'<p>이제 한 옥타브 전부 — <b>도 레 미 파 솔 라 시 도</b>. 줄과 칸이 번갈아 오르는 계단이에요.</p>'
+ +'<table class="ctbl"><tr><th>자리</th><th>음</th></tr><tr><td>줄(아래→위)</td><td><b>미 솔 시 레 파</b> (E G B D F)</td></tr><tr><td>칸(아래→위)</td><td><b>파 라 도 미</b> (F A C E)</td></tr></table>'
+ +'<p>리듬엔 <b>8분음표</b>(박의 절반)와 <b>쉼표</b>(소리 없는 음가)가 들어와요. 쉼표도 음가예요 — 빠뜨리면 마디가 안 맞아요.</p>'
+ +'<div class="cnote"><b>덧줄 · </b>오선 밖 음은 짧은 줄을 그어 자리를 만들어요. 가온다(C4)가 대표적.</div>',
+ ex:[['온음계 상행','C4 D4 E4 F4 G4 A4 B4 C5'],['온음계 하행','C5 B4 A4 G4 F4 E4 D4 C4'],['도 미 솔 도','C4 E4 G4 C5']],
+ drill:{type:'contour'},dict:{key:'C',ts:[4,4],bpm:86,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.5,1,2],rest:true,beats:4,labels:true}},
+
+{id:'w3',tr:'w',n:3,t:'집 찾기 — 으뜸음',lead:'선율이 쉬는 음. 조성의 중심을 귀로 찾기.',
+ concept:'<p><b>으뜸음</b>은 선율이 돌아와 <b>쉬는 음</b>이에요. "집에 왔다"는 느낌이 나는 자리.</p>'
+ +'<p>고정도법을 쓰기 때문에 <b>도는 항상 C</b>예요. 으뜸음은 곡마다 달라지니, 도와 으뜸음은 <b>다른 개념</b>으로 따로 판단해야 해요.</p>'
+ +'<table class="ctbl"><tr><th>단서</th><th>내용</th></tr><tr><td>마지막 음</td><td>선율이 끝나는 음일 때가 많음</td></tr><tr><td>가장 안정</td><td>거기서 멈춰도 어색하지 않음</td></tr><tr><td>반복·강조</td><td>자주 돌아옴</td></tr></table>'
+ +'<p>리듬엔 <b>점음표</b>가 들어와요. 점은 <b>원래 길이의 절반을 더함</b> — 점2분음표는 3박.</p>'
+ +'<div class="cnote"><b>왜 먼저 찾나 · </b>으뜸음을 잡으면 나머지 음의 자리가 상대적으로 잡혀요. 채보 절차 2단계인 이유예요.</div>',
+ ex:[['C가 집인 선율','C4 E4 G4 E4 D4 C4'],['G가 집인 선율','G4 B4 D5 B4 A4 G4'],['F가 집인 선율','F4 A4 C5 A4 G4 F4']],
+ drill:{type:'tonic'},dict:{key:'C',ts:[4,4],bpm:86,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.5,1,1.5,2],beats:4}},
+
+{id:'w4',tr:'w',n:4,t:'장조와 단조',lead:'밝음과 어두움을 가르는 건 3도 하나.',
+ concept:'<p>장조와 단조를 가르는 건 으뜸음 위 <b>3도</b> 하나예요.</p>'
+ +'<table class="ctbl"><tr><th>조</th><th>3도</th><th>반음 수</th><th>느낌</th></tr><tr><td>장조</td><td><b>장3도</b></td><td>4</td><td>밝음</td></tr><tr><td>단조</td><td><b>단3도</b></td><td>3</td><td>어두움</td></tr></table>'
+ +'<p>반음 하나 차이지만 색이 완전히 달라져요. 채보에서 <b>3도를 잘못 들으면 조 전체가 틀어져요</b>.</p>'
+ +'<p>박자표의 <b>위 숫자</b>는 한 마디 박 수예요. 2/4는 두 박, 3/4는 세 박.</p>'
+ +'<div class="cnote"><b>강박 찾기 · </b>무게가 실리는 박이 마디의 첫 박. 강박 간격을 세면 박 수가 나와요.</div>',
+ ex:[['C장 3화음','C4 E4 G4'],['c단 3화음','C4 Eb4 G4'],['장조 선율','C4 E4 G4 E4 C4'],['단조 선율','C4 Eb4 G4 Eb4 C4']],
+ drill:{type:'majmin'},dict:{key:'C',ts:[3,4],bpm:92,pool:['C4','D4','E4','F4','G4','A4'],durs:[0.5,1,1.5,2],beats:3}},
+
+{id:'w5',tr:'w',n:5,t:'조표 붙는 순서',lead:'♯·♭이 붙는 순서는 정해져 있어요. 반음이 조성을 따라 들어옵니다.',
+ concept:'<p>반음(♯·♭)은 아무렇게나 오지 않아요. <b>조성이 데려옵니다.</b> 붙는 순서가 고정이에요.</p>'
+ +'<table class="ctbl"><tr><th>구분</th><th>순서</th></tr><tr><td>♯</td><td><b>파 도 솔 레 라 미 시</b></td></tr><tr><td>♭</td><td><b>시 미 라 레 솔 도 파</b></td></tr></table>'
+ +'<p>두 순서는 서로 <b>역순</b>이에요. 읽는 법도 규칙이 있어요.</p>'
+ +'<table class="ctbl"><tr><th>조표</th><th>으뜸음 찾는 법</th></tr><tr><td>♯조</td><td>마지막 ♯의 <b>반음 위</b></td></tr><tr><td>♭조</td><td>마지막에서 <b>두 번째 ♭</b></td></tr></table>'
+ +'<div class="cnote"><b>당김음 · </b>약박에 무게를 실어 규칙을 어긋내는 기법. 어긋남이 추진력이 돼요.</div>',
+ ex:[['G장조 음계 (F♯)','G4 A4 B4 C5 D5 E5 F#5 G5'],['F장조 음계 (B♭)','F4 G4 A4 Bb4 C5 D5 E5 F5']],
+ drill:{type:'keysig'},dict:{key:'G',ts:[4,4],bpm:90,pool:['G4','A4','B4','C5','D5','E5','F#5'],durs:[0.5,1,1.5,2],beats:4}},
+
+{id:'w6',tr:'w',n:6,t:'여러 조에서',lead:'조표를 읽고 그 조 안에서 듣기. 16분음표까지.',
+ concept:'<p>조표를 보면 <b>어느 음이 항상 반음 되는지</b>를 알 수 있어요. 그 조 안에서는 임시표 없이 씁니다.</p>'
+ +'<p>고정도법에서 음이름은 안 바뀌어요 — G장조에서도 F♯은 여전히 "파 샵"이에요. 다만 <b>으뜸음이 G</b>일 뿐.</p>'
+ +'<table class="ctbl"><tr><th>조</th><th>조표</th><th>으뜸음</th></tr><tr><td>C장</td><td>없음</td><td>C</td></tr><tr><td>G장</td><td>♯1 (F♯)</td><td>G</td></tr><tr><td>D장</td><td>♯2 (F♯ C♯)</td><td>D</td></tr><tr><td>F장</td><td>♭1 (B♭)</td><td>F</td></tr><tr><td>B♭장</td><td>♭2 (B♭ E♭)</td><td>B♭</td></tr></table>'
+ +'<p><b>16분음표</b>는 박의 1/4. 빠른 흐름을 적을 때 씁니다.</p>',
+ ex:[['D장조 음계','D4 E4 F#4 G4 A4 B4 C#5 D5'],['B♭장조 음계','Bb4 C5 D5 Eb5 F5 G5 A5 Bb5']],
+ drill:{type:'keysig2'},dict:{key:'F',ts:[4,4],bpm:88,pool:['F4','G4','A4','Bb4','C5','D5','E5'],durs:[0.25,0.5,1,1.5,2],beats:4}},
+
+{id:'w7',tr:'w',n:7,t:'임시표',lead:'조 밖의 반음. 마디 안에서만 살아 있어요.',
+ concept:'<p><b>임시표</b>는 조표에 없는 반음이에요. 그 순간만 음을 올리거나 내립니다.</p>'
+ +'<table class="ctbl"><tr><th>기호</th><th>뜻</th></tr><tr><td>\u266F</td><td>반음 올림</td></tr><tr><td>\u266D</td><td>반음 내림</td></tr><tr><td>\u266E</td><td>제자리 — 조표·임시표를 취소</td></tr></table>'
+ +'<div class="cnote"><b>지속 범위 · </b>임시표는 <b>같은 마디·같은 높이</b>에서만 유효해요. 마디선을 넘으면 해제됩니다. 채보할 때 마디마다 다시 붙여야 하는 이유예요.</div>'
+ +'<p>귀로는 <b>조에서 벗어난 낯선 색</b>으로 들려요. "여기 뭔가 이상하다" 싶은 지점이 임시표일 때가 많아요.</p>',
+ ex:[['임시표 없음','C4 D4 E4 F4 G4'],['F♯ 임시표','C4 D4 E4 F#4 G4'],['E♭ 임시표','C4 D4 Eb4 F4 G4']],
+ drill:{type:'accid'},dict:{key:'C',ts:[4,4],bpm:88,pool:['C4','D4','E4','F4','F#4','G4','A4','Bb4','B4','C5'],durs:[0.5,1,1.5,2],beats:4}},
+
+{id:'w8',tr:'w',n:8,t:'꾸밈 걸러내기',lead:'장식음은 음가가 없어요. 구조음 골격을 먼저 잡아야 합니다.',
+ concept:'<p>모든 소리가 <b>음가를 갖는 음</b>은 아니에요. <b>장식음</b>은 본음을 꾸미는 스침이라 <b>독립된 음가가 없습니다</b>.</p>'
+ +'<table class="ctbl"><tr><th>종류</th><th>소리</th></tr><tr><td>앞꾸밈음</td><td>본음 앞을 짧게 스침</td></tr><tr><td>트릴</td><td>본음-윗음 빠르게 교대</td></tr><tr><td>모르덴트</td><td>본음-옆음-본음 빠르게</td></tr><tr><td>턴</td><td>위-본-아래-본 회전</td></tr></table>'
+ +'<div class="cnote"><b>왜 이게 먼저냐 · </b>빠른 꾸밈을 구조음으로 착각하면 <b>음가 계산이 통째로 어긋나요</b>. 장식음을 걸러낸 뒤에야 리듬 골격이 제대로 잡혀요.</div>'
+ +'<p>판별 기준은 하나예요 — <b>그 음이 박을 차지하는가</b>. 차지하면 구조음, 스치면 장식음.</p>',
+ ex:[['구조음만','C4 E4 G4 E4'],['앞꾸밈 붙은 같은 선율','C4 E4 G4 E4'],['트릴 붙은 음','C4 E4 G4 E4']],
+ exOrn:[null,'grace','trill'],
+ drill:{type:'ornament'},dict:{key:'C',ts:[4,4],bpm:88,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.5,1,1.5,2],beats:4,orn:true}},
+
+{id:'w9',tr:'w',n:9,t:'복합박자 — 3분박',lead:'박이 셋으로 나뉘는 세계. 6/8·9/8·12/8.',
+ concept:'<p>지금까지는 <b>단순박자</b> — 박이 <b>둘</b>로 나뉘었어요. 이제 박이 <b>셋</b>으로 나뉘는 <b>복합박자</b>예요.</p>'
+ +'<table class="ctbl"><tr><th>구분</th><th>박 단위</th><th>분할</th><th>박자표</th></tr><tr><td>단순박자</td><td>4분음표</td><td><b>2</b>분할</td><td>2/4 3/4 4/4</td></tr><tr><td>복합박자</td><td><b>점4분음표</b></td><td><b>3</b>분할</td><td>6/8 9/8 12/8</td></tr></table>'
+ +'<p>6/8은 8분음표 6개 = <b>점4분 박 2개</b>. 9/8은 3개, 12/8은 4개예요.</p>'
+ +'<p><b>셋잇단음표</b>가 다리예요 — 단순박자 안에서 한 박을 셋으로 빌려 쪼갭니다. 3분박의 맛을 미리 봐요.</p>'
+ +'<div class="cnote"><b>채보 1단계 · </b>듣자마자 <b>2분박이냐 3분박이냐</b>부터 판단하세요. 이걸 틀리면 박자표 전체가 틀어져요. 국악은 대부분 3분박입니다.</div>',
+ ex:[['2분박 (4/4)','C4 D4 E4 F4'],['3분박 (6/8)','C4 D4 E4 F4 G4 A4'],['셋잇단','C4 D4 E4 C4 D4 E4']],
+ exMeter:[[4,4],[6,8],[4,4]],
+ drill:{type:'division'},dict:{key:'C',ts:[6,8],bpm:76,pool:['C4','D4','E4','F4','G4','A4'],durs:[0.5,1,1.5],beats:6,unit:0.5}},
+
+{id:'w10',tr:'w',n:10,t:'변박과 헤미올라',lead:'2와 3이 섞이는 박자. 묶음이 바뀌는 착청.',
+ concept:'<p><b>가산박(변박)</b>은 2와 3이 섞여 한 마디를 이뤄요.</p>'
+ +'<table class="ctbl"><tr><th>박자표</th><th>묶음</th></tr><tr><td>5/8</td><td>3+2 또는 2+3</td></tr><tr><td>7/8</td><td>3+2+2 등</td></tr><tr><td>10/8</td><td>3+2+3+2 (엇모리)</td></tr></table>'
+ +'<p><b>헤미올라</b>는 같은 시간을 다르게 묶는 착청이에요. 3박 두 마디(3+3)를 2박 세 덩어리(2+2+2)로 재해석합니다.</p>'
+ +'<div class="cnote"><b>채보 요령 · </b>변박은 <b>강박 간격을 세어</b> 묶음을 찾으세요. 3+2인지 2+3인지가 곧 마디 구조예요.</div>',
+ ex:[['5/8 (3+2)','C4 D4 E4 F4 G4'],['7/8 (3+2+2)','C4 D4 E4 F4 G4 A4 B4'],['헤미올라 (3+3 → 2+2+2)','C4 D4 E4 F4 G4 A4']],
+ drill:{type:'addmeter'},dict:{key:'C',ts:[5,8],bpm:78,pool:['C4','D4','E4','F4','G4'],durs:[0.5,1,1.5],beats:5,unit:0.5}},
+
+{id:'w11',tr:'w',n:11,t:'표현까지',lead:'아티큘레이션은 음가를 안 바꿔요. 마지막에 얹습니다.',
+ concept:'<p><b>아티큘레이션</b>은 음을 <b>어떻게 소리 내는가</b>예요. 음높이도 음가도 바꾸지 않아요.</p>'
+ +'<table class="ctbl"><tr><th>기호</th><th>이름</th><th>소리</th></tr><tr><td>.</td><td>스타카토</td><td>짧게 끊어</td></tr><tr><td>\u2312</td><td>레가토(슬러)</td><td>이어서 매끈하게</td></tr><tr><td>&gt;</td><td>악센트</td><td>그 음만 도드라지게</td></tr><tr><td>\u2013</td><td>테누토</td><td>음가를 꽉 눌러 채움</td></tr></table>'
+ +'<div class="cnote"><b>왜 마지막이냐 · </b>장식음과 달리 아티큘레이션은 <b>음가를 안 바꿔요</b>. 늦게 얹어도 채보가 안 틀어집니다. 그래서 맨 뒤예요.</div>'
+ +'<p>이제 전 과정을 통합해요 — 박 분할 → 으뜸음 → 장식음 걸러내기 → 리듬 골격 → 음높이 → 표현.</p>',
+ ex:[['레가토','C4 D4 E4 F4 G4'],['스타카토','C4 D4 E4 F4 G4'],['악센트 (첫 음)','C4 D4 E4 F4 G4']],
+ exArtic:['legato','stacc','accent'],
+ drill:{type:'artic'},dict:{key:'G',ts:[4,4],bpm:92,pool:['G4','A4','B4','C5','D5','E5','F#5','G5'],durs:[0.25,0.5,1,1.5,2],beats:4}},
+
+/* ── 산조 트랙 ── */
+{id:'s1',tr:'s',n:1,t:'본청과 계면조',lead:'본청을 C로 두고 간격으로 듣기. 한 옥타브 일곱 청.',
+ concept:'<p>국악 채보는 <b>실음이 아니라 간격</b>으로 적어요. 본청(중심음)을 무조건 <b>C</b>로 두고, 나머지를 상대적으로 잡습니다.</p>'
+ +'<p>계면조 한 옥타브는 <b>일곱 개의 청</b>이에요. 전부 <b>음가 있는 정규 음표</b>입니다.</p>'
+ +'<table class="ctbl"><tr><th>청</th><th>음</th></tr><tr><td>본청</td><td><b>C</b></td></tr><tr><td>꺾는청</td><td><b>D</b></td></tr><tr><td>(꺾기 전 음)</td><td><b>E\u266D</b></td></tr><tr><td>흘리는청</td><td><b>F</b></td></tr><tr><td>떠는청</td><td><b>G</b></td></tr><tr><td>윗꺾는청</td><td><b>A\u266E</b></td></tr><tr><td>더음청</td><td><b>B\u266D</b></td></tr></table>'
+ +'<div class="cnote a"><b>표기 규칙 · </b><b>Cm 조표(\u266D3)</b>를 쓰고, <b>A만 \u266E 임시표</b>를 붙여요. A가 내추럴이라 조표만으로는 안 되기 때문이에요.</div>',
+ ex:[['계면조 상행','C4 D4 Eb4 F4 G4 A4 Bb4 C5'],['계면조 하행','C5 Bb4 A4 G4 F4 Eb4 D4 C4'],['본청 중심 선율','C4 Eb4 F4 G4 F4 Eb4 C4']],
+ sanjo:true,
+ drill:{type:'cheong'},dict:{key:'Eb',ts:[12,8],bpm:72,pool:['C4','D4','Eb4','F4','G4','A4n','Bb4','C5'],durs:[0.5,1,1.5],beats:6,unit:0.5,sanjo:true}},
+
+{id:'s2',tr:'s',n:2,t:'청별 시김새',lead:'꺾기·흘리기·요성. 음을 더하는 게 아니라 이동 방식.',
+ concept:'<p>시김새는 <b>음을 더하는 장식이 아니에요</b>. 실음 사이를 <b>어떻게 이동하는가</b>입니다.</p>'
+ +'<table class="ctbl"><tr><th>시김새</th><th>청</th><th>소리</th></tr><tr><td><b>꺾기</b></td><td>꺾는청 D</td><td>E\u266D를 길게 지속한 뒤 D로 꺾어 떨어뜨림</td></tr><tr><td><b>꺾기</b></td><td>윗꺾는청 A</td><td>B\u266D를 길게 지속한 뒤 A로 꺾어 떨어뜨림</td></tr><tr><td><b>흘리기</b></td><td>흘리는청 F</td><td>F를 길게 지속한 뒤 E\u266D로 흘려 내림</td></tr><tr><td><b>요성</b></td><td>떠는청 G</td><td>폭넓게 떨기</td></tr></table>'
+ +'<div class="cnote a"><b>서양과 다른 점 · </b>서양 장식음은 음가가 없어 <b>걸러내야</b> 했어요. 산조는 <b>앞 음도 길게 쓰는 실음</b>이라 걸러낼 게 없습니다. 대신 <b>이동 방식을 읽어야</b> 해요.</div>'
+ +'<p>그래서 채보 3단계가 달라져요 — "장식음 걸러내기"가 아니라 <b>"꺾기냐 흘리기냐 요성이냐"</b>를 판별합니다.</p>',
+ ex:[['꺾기 E\u266D\u2192D','X'],['흘리기 F\u2192E\u266D','X'],['요성 G','X'],['곧은 G (비교)','G4']],
+ exSigim:['bend1','slide1','vib1',null],
+ sanjo:true,
+ drill:{type:'sigim'},dict:{key:'Eb',ts:[12,8],bpm:72,pool:['C4','D4','Eb4','F4','G4','A4n','Bb4','C5'],durs:[0.5,1,1.5],beats:6,unit:0.5,sanjo:true}},
+
+{id:'s3',tr:'s',n:3,t:'장단과 박자표',lead:'장단은 박자표와 템포로 결정돼요. 국악은 대부분 3분박.',
+ concept:'<p>국악은 <b>3분박이 주</b>예요. 2분박은 중모리 정도. 빨라져도 3분박이 유지됩니다.</p>'
+ +'<table class="ctbl"><tr><th>장단</th><th>분박</th><th>박자표</th><th>한 장단</th><th>템포</th></tr>'
+ +'<tr><td>진양</td><td>3분박</td><td><b>18/8</b></td><td>1마디</td><td>가장 느림</td></tr>'
+ +'<tr><td>중모리</td><td>2분박</td><td><b>3/4</b></td><td>4마디</td><td>느림~중간</td></tr>'
+ +'<tr><td>중중모리</td><td>3분박</td><td><b>12/8</b></td><td>1마디</td><td>중간</td></tr>'
+ +'<tr><td>자진모리</td><td>3분박</td><td><b>12/8</b></td><td>1마디</td><td>빠름</td></tr>'
+ +'<tr><td>휘모리</td><td>3분박</td><td><b>12/8</b></td><td>1마디</td><td>더 빠름</td></tr>'
+ +'<tr><td>엇모리</td><td>3+2+3+2</td><td><b>10/8</b></td><td>1마디</td><td>중간(엇박)</td></tr></table>'
+ +'<div class="cnote a"><b>12/8 삼형제 · </b>중중모리·자진모리·휘모리는 <b>박자표가 같아요</b>. 오직 <b>템포</b>로 갈립니다. 그래서 채보할 때 장단명과 템포(\u2669.=BPM)를 같이 적어야 해요.</div>'
+ +'<p>점4분 한 박 안에서 <b>8분·16분 조합</b> 리듬형이 자주 나와요. 절대적이진 않지만 익혀두면 빨리 잡혀요.</p>',
+ ex:[['진양 (18/8, 느림)','X'],['중모리 (3/4, 2분박)','X'],['중중모리 (12/8)','X'],['자진모리 (12/8, 빠름)','X'],['엇모리 (10/8)','X']],
+ exJang:['jinyang','jungmori','jungjung','jajin','eot'],
+ sanjo:true,
+ drill:{type:'jangdan'},dict:{key:'Eb',ts:[12,8],bpm:96,pool:['C4','D4','Eb4','F4','G4','A4n','Bb4'],durs:[0.5,1,1.5],beats:6,unit:0.5,sanjo:true}},
+
+{id:'s4',tr:'s',n:4,t:'산조 채보',lead:'장단 → 본청 → 시김새 → 리듬 → 음높이. 전 과정 통합.',
+ concept:'<p>산조 채보 절차예요. 서양과 <b>3단계만 다릅니다</b>.</p>'
+ +'<table class="ctbl"><tr><th>단계</th><th>할 일</th></tr>'
+ +'<tr><td>1</td><td>전체 듣기 — <b>장단·템포</b>부터 (박자표 결정)</td></tr>'
+ +'<tr><td>2</td><td><b>본청</b> 찾기 (= C로 둠)</td></tr>'
+ +'<tr><td>3</td><td><b>시김새 판별</b> — 꺾기·흘리기·요성</td></tr>'
+ +'<tr><td>4</td><td>리듬 골격 (모든 음이 음가 있음)</td></tr>'
+ +'<tr><td>5</td><td>음높이 — 7청 중 어느 청인지</td></tr>'
+ +'<tr><td>6</td><td>시김새 표시 얹기</td></tr>'
+ +'<tr><td>7</td><td>오선에 옮겨 다시 들으며 검산</td></tr></table>'
+ +'<div class="cnote a"><b>핵심 · </b>산조엔 걸러낼 장식음이 없어요. 전부 실음이니 <b>리듬 골격부터</b> 잡고 이동 방식을 얹으면 됩니다.</div>',
+ ex:[['산조 프레이즈 1','C4 Eb4 F4 G4 F4 Eb4 D4 C4'],['산조 프레이즈 2','G4 Bb4 C5 Bb4 A4 G4 F4 G4']],
+ sanjo:true,
+ drill:{type:'cheong2'},dict:{key:'Eb',ts:[12,8],bpm:84,pool:['C4','D4','Eb4','F4','G4','A4n','Bb4','C5'],durs:[0.5,1,1.5,3],beats:6,unit:0.5,sanjo:true}},
+
+{id:'s5',tr:'s',n:5,t:'변청 — 조옮김',lead:'본청이 옮겨가도 청 사이 간격은 그대로.',
+ concept:'<p><b>변청</b>은 본청이 다른 음으로 옮겨가는 거예요. <b>청 사이 간격은 그대로</b>라 구조는 같습니다.</p>'
+ +'<table class="ctbl"><tr><th>청</th><th>Cm (\u266D3)</th><th>Fm (\u266D4)</th><th>Gm (\u266D2)</th></tr>'
+ +'<tr><td>본청</td><td>C</td><td>F</td><td>G</td></tr>'
+ +'<tr><td>꺾는청</td><td>D</td><td>G</td><td>A</td></tr>'
+ +'<tr><td>흘리는청</td><td>F</td><td>B\u266D</td><td>C</td></tr>'
+ +'<tr><td>떠는청</td><td>G</td><td>C</td><td>D</td></tr>'
+ +'<tr><td>윗꺾는청</td><td>A\u266E</td><td>D\u266E</td><td>E\u266E</td></tr>'
+ +'<tr><td>더음청</td><td>B\u266D</td><td>E\u266D</td><td>F</td></tr></table>'
+ +'<div class="cnote a"><b>표기 규칙 · </b>각 조의 조표를 쓰고, <b>윗꺾는청(6음)만 \u266E 임시표</b>를 붙여요. 규칙이 하나로 통일돼요.</div>'
+ +'<p>더 많은 변청은 나중에 추가할 예정이에요.</p>',
+ ex:[['Cm 본청','C4 D4 Eb4 F4 G4 A4 Bb4 C5'],['Fm 본청','F4 G4 Ab4 Bb4 C5 D5 Eb5 F5'],['Gm 본청','G4 A4 Bb4 C5 D5 E5 F5 G5']],
+ sanjo:true,
+ drill:{type:'byeoncheong'},dict:{key:'Bb',ts:[12,8],bpm:84,pool:['G4','A4','Bb4','C5','D5','E5n','F5','G5'],durs:[0.5,1,1.5],beats:6,unit:0.5,sanjo:true}}
+];
+
+/* ══ 유틸 ══ */
+function rnd(n){return Math.floor(Math.random()*n);}
+function pick(a){return a[rnd(a.length)];}
+function shuf(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=rnd(i+1),t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function nm(n){return n.let+(n.acc>0?'\u266F':n.acc<0?'\u266D':'');}
+function seqOf(arr,d){var s=[];for(var i=0;i<arr.length;i++)s.push({n:arr[i],d:d||1});return s;}
+
+/* ══ 예시 재생 ══ */
+function playEx(si,ei){
+  var st=CUR[si];ac();
+  if(st.exSigim&&st.exSigim[ei]){
+    var g=st.exSigim[ei];
+    if(g==='bend1'){tone(midiOf(pn('D4')),0.08,1.9,{type:'bend',from:midiOf(pn('Eb4'))});}
+    else if(g==='slide1'){tone(midiOf(pn('Eb4')),0.08,1.9,{type:'slide',from:midiOf(pn('F4'))});}
+    else if(g==='vib1'){tone(midiOf(pn('G4')),0.08,2.0,{type:'vib',depth:18,rate:5.0});}
+    return;
+  }
+  if(st.exJang&&st.exJang[ei]){return playJangdan(st.exJang[ei]);}
+  if(st.exOrn!==undefined&&st.exOrn[ei]){
+    var base=pnl(st.ex[ei][1]),o=st.exOrn[ei],sp=0.55,t=0.08;
+    for(var i=0;i<base.length;i++){
+      if(o==='grace'&&i===1){tone(midiOf(base[i])+2,t,0.09);t+=0.09;}
+      if(o==='trill'&&i===2){
+        var m=midiOf(base[i]);
+        for(var k=0;k<6;k++)tone(k%2?m+2:m,t+k*0.075,0.08);
+        t+=sp;continue;
+      }
+      tone(midiOf(base[i]),t,sp*0.92);t+=sp;
+    }
+    return;
+  }
+  if(st.exArtic&&st.exArtic[ei]){
+    var b=pnl(st.ex[ei][1]),a=st.exArtic[ei],sp2=0.45,tt=0.08;
+    for(var j=0;j<b.length;j++){
+      var dur=(a==='stacc')?0.13:sp2*0.97;
+      var vol=(a==='accent'&&j===0)?0.34:0.2;
+      tone(midiOf(b[j]),tt,dur,null,vol);tt+=sp2;
+    }
+    return;
+  }
+  if(st.exMeter&&st.exMeter[ei]){
+    var mt=st.exMeter[ei],nn=pnl(st.ex[ei][1]);
+    var isC=(mt[1]===8);
+    playSeq(seqOf(nn,isC?0.5:1),isC?150:104,true,isC?3:4);return;
+  }
+  playNotes(pnl(st.ex[ei][1]),100,st.sanjo?0.8:0.55);
+}
+var JANG={
+ jinyang:{bpm:38,beats:6,div:3,label:'\uC9C4\uC591 18/8'},
+ jungmori:{bpm:92,beats:3,div:2,label:'\uC911\uBAA8\uB9AC 3/4'},
+ jungjung:{bpm:78,beats:4,div:3,label:'\uC911\uC911\uBAA8\uB9AC 12/8'},
+ jajin:{bpm:132,beats:4,div:3,label:'\uC790\uC9C4\uBAA8\uB9AC 12/8'},
+ hwi:{bpm:180,beats:4,div:3,label:'\uD718\uBAA8\uB9AC 12/8'},
+ eot:{bpm:96,beats:0,div:0,label:'\uC5C7\uBAA8\uB9AC 10/8',group:[3,2,3,2]}
+};
+function playJangdan(k,reps){
+  var j=JANG[k];if(!j)return;ac();
+  var sp=60/j.bpm,t=0.1,R=reps||2;
+  for(var r=0;r<R;r++){
+    if(j.group){
+      var u=sp/3;
+      for(var gi=0;gi<j.group.length;gi++){
+        for(var s=0;s<j.group[gi];s++){click(t,s===0&&gi===0?true:(s===0));t+=u;}
+      }
+    }else{
+      for(var b=0;b<j.beats;b++){
+        for(var d=0;d<j.div;d++){click(t,d===0&&b===0?true:(d===0));t+=sp/j.div;}
+      }
+    }
+  }
+  return t;
+}
+
+/* ══ 드릴 ══ */
+var DR={cur:null,ok:0,tot:0,si:0};
+var SANJO_CHEONG=[['C','\uBCF8\uCCAD'],['D','\uAF3A\uB294\uCCAD'],['Eb','\uAF3A\uAE30 \uC804 \uC74C'],['F','\uD758\uB9AC\uB294\uCCAD'],['G','\uB5A0\uB294\uCCAD'],['A','\uC717\uAF3A\uB294\uCCAD'],['Bb','\uB354\uC74C\uCCAD']];
+
+function genDrill(type){
+  var A,B,i,j,o,ans,q,plays;
+  if(type==='hilo'){
+    var pool=['C4','D4','E4','F4','G4'];
+    A=pn(pick(pool));var same=rnd(4)===0;
+    B=same?A:pn(pick(pool));
+    while(!same&&midiOf(B)===midiOf(A))B=pn(pick(pool));
+    var d=midiOf(B)-midiOf(A);
+    ans=d===0?2:(d>0?0:1);
+    return{q:'\uB450 \uC74C\uC744 \uB4E4\uC5B4\uBCF4\uC138\uC694. \uB450 \uBC88\uC9F8 \uC74C\uC740?',plays:[['\uB4E3\uAE30',seqOf([A,B],1)]],
+      opts:['\uB354 \uB192\uB2E4','\uB354 \uB0AE\uB2E4','\uAC19\uB2E4'],ans:ans,exp:nm(A)+' \u2192 '+nm(B)};
+  }
+  if(type==='contour'){
+    var pl=['C4','D4','E4','F4','G4','A4','B4','C5'],ns=[];
+    for(i=0;i<4;i++)ns.push(pn(pick(pl)));
+    var sh='';for(i=1;i<4;i++){var dd=midiOf(ns[i])-midiOf(ns[i-1]);sh+=(dd>0?'\u2191':dd<0?'\u2193':'\u2192');}
+    var cands=[sh];
+    while(cands.length<4){var c='';for(i=0;i<3;i++)c+=pick(['\u2191','\u2193','\u2192']);if(cands.indexOf(c)<0)cands.push(c);}
+    var sc=shuf(cands);
+    return{q:'\uB124 \uC74C\uC758 \uC724\uACFD(\uC62C\uB77C\uAC10/\uB0B4\uB824\uAC10)\uC740?',plays:[['\uB4E3\uAE30',seqOf(ns,0.65)]],
+      opts:sc,ans:sc.indexOf(sh),exp:ns.map(nm).join(' ')};
+  }
+  if(type==='tonic'){
+    var keys=[['C',['C4','E4','G4','E4','D4','C4']],['G',['G4','B4','D5','B4','A4','G4']],['F',['F4','A4','C5','A4','G4','F4']],['D',['D4','F#4','A4','F#4','E4','D4']]];
+    var K=pick(keys),opts=shuf(['C','G','F','D']);
+    return{q:'\uC774 \uC120\uC728\uC758 \uC73C\uB73B\uC74C\uC740?',plays:[['\uB4E3\uAE30',seqOf(pnl(K[1].join(' ')),0.6)]],
+      opts:opts,ans:opts.indexOf(K[0]),exp:'\uC120\uC728\uC774 \uC26C\uB294 \uC74C = '+K[0]};
+  }
+  if(type==='majmin'){
+    var root=pick(['C4','D4','F4','G4']),r=pn(root),isMaj=rnd(2)===0;
+    var third={let:r.let,oct:r.oct,acc:r.acc};var m=midiOf(r)+(isMaj?4:3);
+    var seq=[{n:r,d:0.6},{n:midiToNote(m,isMaj?'#':'b'),d:0.6},{n:midiToNote(midiOf(r)+7,'#'),d:0.6},{n:r,d:0.9}];
+    return{q:'\uC7A5\uC870\uC778\uAC00\uC694, \uB2E8\uC870\uC778\uAC00\uC694?',plays:[['\uB4E3\uAE30',seq]],
+      opts:['\uC7A5\uC870 (\uBC1D\uC74C)','\uB2E8\uC870 (\uC5B4\uB450\uC6C0)'],ans:isMaj?0:1,exp:isMaj?'\uC7A5\uC870 \u2014 \uC7A53\uB3C4(4\uBC18\uC74C)':'\uB2E8\uC870 \u2014 \uB2E83\uB3C4(3\uBC18\uC74C)'};
+  }
+  if(type==='keysig'){
+    var qs=[['\u266F\uC774 \uBD99\uB294 \uC21C\uC11C\uB294?',['\uD30C \uB3C4 \uC194 \uB808 \uB77C \uBBF8 \uC2DC','\uC2DC \uBBF8 \uB77C \uB808 \uC194 \uB3C4 \uD30C','\uB3C4 \uB808 \uBBF8 \uD30C \uC194 \uB77C \uC2DC','\uD30C \uC194 \uB808 \uB77C \uBBF8 \uC2DC \uB3C4'],0,'F C G D A E B'],
+      ['\u266D\uC774 \uBD99\uB294 \uC21C\uC11C\uB294?',['\uD30C \uB3C4 \uC194 \uB808 \uB77C \uBBF8 \uC2DC','\uC2DC \uBBF8 \uB77C \uB808 \uC194 \uB3C4 \uD30C','\uB77C \uB808 \uC194 \uB3C4 \uD30C \uC2DC \uBBF8','\uBBF8 \uB77C \uB808 \uC194 \uB3C4 \uD30C \uC2DC'],1,'B E A D G C F \u2014 \u266F \uC21C\uC11C\uC758 \uC5ED\uC21C'],
+      ['\u266F\uC870\uC758 \uC73C\uB73B\uC74C \uCC3E\uB294 \uBC95\uC740?',['\uB9C8\uC9C0\uB9C9 \u266F\uC758 \uBC18\uC74C \uC704','\uB9C8\uC9C0\uB9C9 \u266F \uC790\uCCB4','\uCCAB \u266F\uC758 \uC544\uB798','\uB9C8\uC9C0\uB9C9\uC5D0\uC11C \uB450 \uBC88\uC9F8'],0,'\uC608: \uB9C8\uC9C0\uB9C9 \u266F\uC774 F\u266F \u2192 G\uC7A5\uC870'],
+      ['\u266D\uC870\uC758 \uC73C\uB73B\uC74C \uCC3E\uB294 \uBC95\uC740?',['\uB9C8\uC9C0\uB9C9 \u266D','\uB9C8\uC9C0\uB9C9\uC5D0\uC11C \uB450 \uBC88\uC9F8 \u266D','\uCCAB \u266D\uC758 \uC704','\uB9C8\uC9C0\uB9C9 \u266D\uC758 \uBC18\uC74C \uC544\uB798'],1,'\u266D2\uAC1C(B\u266D E\u266D) \u2192 B\u266D\uC7A5\uC870']];
+    var Q=pick(qs);return{q:Q[0],plays:[],opts:Q[1],ans:Q[2],exp:Q[3]};
+  }
+  if(type==='keysig2'){
+    var ks=[['\u266F1 (F\u266F)','G'],['\u266F2 (F\u266F C\u266F)','D'],['\u266D1 (B\u266D)','F'],['\u266D2 (B\u266D E\u266D)','B\u266D'],['\uC5C6\uC74C','C']];
+    var K2=pick(ks),op=shuf(['C','G','D','F','B\u266D']).slice(0,4);
+    if(op.indexOf(K2[1])<0)op[0]=K2[1];op=shuf(op);
+    return{q:'\uC870\uD45C\uAC00 <b>'+K2[0]+'</b>\uC77C \uB54C \uC7A5\uC870\uC758 \uC73C\uB73B\uC74C\uC740?',plays:[],opts:op,ans:op.indexOf(K2[1]),exp:K2[0]+' \u2192 '+K2[1]+'\uC7A5\uC870'};
+  }
+  if(type==='accid'){
+    var mode=rnd(2);
+    if(mode===0){
+      var base=pnl('C4 D4 E4 F4 G4'),alt=rnd(2)===0;
+      var seq2=base.slice();
+      if(alt)seq2[3]={let:'F',oct:4,acc:1};
+      return{q:'\uC784\uC2DC\uD45C(\uC870 \uBC16\uC758 \uBC18\uC74C)\uAC00 \uC788\uB098\uC694? (C\uC7A5\uC870)',plays:[['\uB4E3\uAE30',seqOf(seq2,0.5)]],
+        opts:['\uC788\uB2E4','\uC5C6\uB2E4'],ans:alt?0:1,exp:alt?'4\uBC88\uC9F8 \uC74C\uC774 F\u266F':'\uC804\uBD80 \uC628\uC74C\uACC4'};
+    }
+    return{q:'\uC784\uC2DC\uD45C\uAC00 \uC720\uD6A8\uD55C \uBC94\uC704\uB294?',plays:[],
+      opts:['\uACE1 \uB05D\uAE4C\uC9C0','\uAC19\uC740 \uB9C8\uB514 \uC548\uC5D0\uC11C\uB9CC','\uB2E4\uC74C \uC74C \uD558\uB098','\uD55C \uC904 \uC804\uCCB4'],ans:1,
+      exp:'\uAC19\uC740 \uB9C8\uB514\u00B7\uAC19\uC740 \uB192\uC774. \uB9C8\uB514\uC120\uC744 \uB118\uC73C\uBA74 \uD574\uC81C'};
+  }
+  if(type==='ornament'){
+    var withOrn=rnd(2)===0;
+    return{q:'\uC7A5\uC2DD\uC74C(\uC74C\uAC00 \uC5C6\uB294 \uAF3E\uBC08)\uC774 \uC788\uB098\uC694?',plays:[['\uB4E3\uAE30',{orn:withOrn}]],
+      opts:['\uC788\uB2E4','\uC5C6\uB2E4'],ans:withOrn?0:1,
+      exp:withOrn?'\uC55E\uAF3E\uBBF8\uC74C \u2014 \uBC15\uC744 \uCC28\uC9C0\uD558\uC9C0 \uC54A\uC544 \uC74C\uAC00\uC5D0\uC11C \uC81C\uC678':'\uC804\uBD80 \uAD6C\uC870\uC74C \u2014 \uAC01\uAC01 \uBC15\uC744 \uCC28\uC9C0'};
+  }
+  if(type==='division'){
+    var three=rnd(2)===0;
+    return{q:'\uBC15\uC774 \uBA87\uC73C\uB85C \uB098\uB258\uB098\uC694?',plays:[['\uB4E3\uAE30',{div:three?3:2}]],
+      opts:['2\uBD84\uBC15 (\uB2E8\uC21C\uBC15\uC790)','3\uBD84\uBC15 (\uBCF5\uD569\uBC15\uC790)'],ans:three?1:0,
+      exp:three?'\uD55C \uBC15 = \uC8104\uBD84\uC74C\uD45C. 6/8\u00B79/8\u00B712/8':'\uD55C \uBC15 = 4\uBD84\uC74C\uD45C. 2/4\u00B73/4\u00B74/4'};
+  }
+  if(type==='addmeter'){
+    var pats=[[[3,2],'3+2'],[[2,3],'2+3'],[[3,2,2],'3+2+2'],[[3,2,3,2],'3+2+3+2']];
+    var P=pick(pats),op2=shuf(['3+2','2+3','3+2+2','3+2+3+2']);
+    return{q:'\uAC15\uBC15 \uAC04\uACA9\uC744 \uC138\uC5B4\uBCF4\uC138\uC694. \uBB36\uC74C\uC740?',plays:[['\uB4E3\uAE30',{group:P[0]}]],
+      opts:op2,ans:op2.indexOf(P[1]),exp:P[1]};
+  }
+  if(type==='artic'){
+    var as=[['legato','\uB808\uAC00\uD1A0 (\uC774\uC5B4\uC11C)'],['stacc','\uC2A4\uD0C0\uCE74\uD1A0 (\uC9E7\uAC8C)'],['accent','\uC545\uC13C\uD2B8 (\uCCAB \uC74C \uAC15\uD558\uAC8C)']];
+    var AA=pick(as),op3=shuf(as.map(function(x){return x[1];}));
+    return{q:'\uC5B4\uB5A4 \uC8FC\uBC95\uC778\uAC00\uC694?',plays:[['\uB4E3\uAE30',{artic:AA[0]}]],
+      opts:op3,ans:op3.indexOf(AA[1]),exp:AA[1]+' \u2014 \uC74C\uAC00\uB294 \uC548 \uBC14\uB01C\uC694'};
+  }
+  if(type==='cheong'){
+    var C=pick(SANJO_CHEONG),op4=shuf(SANJO_CHEONG.map(function(x){return x[1];})).slice(0,4);
+    if(op4.indexOf(C[1])<0)op4[0]=C[1];op4=shuf(op4);
+    return{q:'\uBCF8\uCCAD C \uAE30\uC900. <b>'+C[0].replace('b','\u266D')+'</b>\uC740 \uC5B4\uB290 \uCCAD\uC778\uAC00\uC694?',plays:[['\uB4E3\uAE30',[{n:pn('C4'),d:0.8},{n:pn(C[0]+'4'),d:1.2}]],
+      ],opts:op4,ans:op4.indexOf(C[1]),exp:C[0].replace('b','\u266D')+' = '+C[1]};
+  }
+  if(type==='cheong2'){
+    var C2=pick(SANJO_CHEONG),op5=shuf(['C','D','E\u266D','F','G','A\u266E','B\u266D']).slice(0,4);
+    var lbl=C2[0].replace('b','\u266D').replace(/^A$/,'A\u266E');
+    if(op5.indexOf(lbl)<0)op5[0]=lbl;op5=shuf(op5);
+    return{q:'<b>'+C2[1]+'</b>\uC740 \uC5B4\uB5A4 \uC74C\uC778\uAC00\uC694? (\uBCF8\uCCAD C)',plays:[],opts:op5,ans:op5.indexOf(lbl),exp:C2[1]+' = '+lbl};
+  }
+  if(type==='sigim'){
+    var sg=[['bend1','\uAF3A\uAE30 (E\u266D\u2192D)'],['slide1','\uD758\uB9AC\uAE30 (F\u2192E\u266D)'],['vib1','\uC694\uC131 (G \uB5A8\uAE30)'],['plain','\uACE7\uC740 \uC74C']];
+    var S=pick(sg),op6=shuf(sg.map(function(x){return x[1];}));
+    return{q:'\uC5B4\uB5A4 \uC2DC\uAE40\uC0C8\uC778\uAC00\uC694?',plays:[['\uB4E3\uAE30',{sigim:S[0]}]],opts:op6,ans:op6.indexOf(S[1]),exp:S[1]};
+  }
+  if(type==='jangdan'){
+    var jk=pick(['jinyang','jungmori','jungjung','jajin','eot']);
+    var all=['jinyang','jungmori','jungjung','jajin','eot'];
+    var op7=shuf(all).slice(0,4);
+    if(op7.indexOf(jk)<0)op7[0]=jk;op7=shuf(op7);
+    return{q:'\uC5B4\uB5A4 \uC7A5\uB2E8\uC778\uAC00\uC694? (\uBD84\uBC15\uACFC \uD15C\uD3EC\uB85C \uD310\uB2E8)',plays:[['\uB4E3\uAE30',{jang:jk}]],
+      opts:op7.map(function(k){return JANG[k].label;}),ans:op7.indexOf(jk),exp:JANG[jk].label};
+  }
+  if(type==='byeoncheong'){
+    var bc=[['Cm','\uBCF8\uCCAD','C'],['Fm','\uBCF8\uCCAD','F'],['Gm','\uBCF8\uCCAD','G'],
+            ['Cm','\uC717\uAF3A\uB294\uCCAD','A\u266E'],['Fm','\uC717\uAF3A\uB294\uCCAD','D\u266E'],['Gm','\uC717\uAF3A\uB294\uCCAD','E\u266E'],
+            ['Cm','\uB354\uC74C\uCCAD','B\u266D'],['Fm','\uB354\uC74C\uCCAD','E\u266D'],['Gm','\uB354\uC74C\uCCAD','F']];
+    var Bc=pick(bc),op8=shuf(['C','D','E\u266D','F','G','A\u266E','B\u266D','D\u266E','E\u266E']).slice(0,4);
+    if(op8.indexOf(Bc[2])<0)op8[0]=Bc[2];op8=shuf(op8);
+    return{q:'<b>'+Bc[0]+'</b> \uBCC0\uCCAD\uC5D0\uC11C <b>'+Bc[1]+'</b>\uC740?',plays:[],opts:op8,ans:op8.indexOf(Bc[2]),exp:Bc[0]+' '+Bc[1]+' = '+Bc[2]};
+  }
+  return{q:'-',plays:[],opts:['-'],ans:0,exp:''};
+}
+function midiToNote(m,pref){
+  var pc=((m%12)+12)%12,oct=Math.floor(m/12)-1;
+  var sh=[['C',0],['C',1],['D',0],['D',1],['E',0],['F',0],['F',1],['G',0],['G',1],['A',0],['A',1],['B',0]];
+  var fl=[['C',0],['D',-1],['D',0],['E',-1],['E',0],['F',0],['G',-1],['G',0],['A',-1],['A',0],['B',-1],['B',0]];
+  var t=(pref==='b')?fl[pc]:sh[pc];
+  return{let:t[0],oct:oct,acc:t[1]};
+}
+function drillPlay(spec){
+  ac();
+  if(Object.prototype.toString.call(spec)==='[object Array]'){playSeq(spec,100);return;}
+  if(spec.orn!==undefined){
+    var b=pnl('C4 E4 G4 E4'),t=0.08,sp=0.5;
+    for(var i=0;i<b.length;i++){
+      if(spec.orn&&i===2){tone(midiOf(b[i])+2,t,0.08);t+=0.08;}
+      tone(midiOf(b[i]),t,sp*0.9);t+=sp;
+    }return;
+  }
+  if(spec.div){var sp2=0.62,t2=0.1;for(var b2=0;b2<4;b2++){for(var d=0;d<spec.div;d++){click(t2,d===0);t2+=sp2/spec.div;}}return;}
+  if(spec.group){var u=0.2,t3=0.1;for(var r=0;r<3;r++)for(var g=0;g<spec.group.length;g++)for(var s=0;s<spec.group[g];s++){click(t3,s===0);t3+=u;}return;}
+  if(spec.artic){var bb=pnl('C4 D4 E4 F4 G4'),t4=0.08,s4=0.45;
+    for(var k=0;k<bb.length;k++){var du=(spec.artic==='stacc')?0.13:s4*0.97;var vo=(spec.artic==='accent'&&k===0)?0.34:0.2;tone(midiOf(bb[k]),t4,du,null,vo);t4+=s4;}return;}
+  if(spec.sigim){
+    if(spec.sigim==='bend1')tone(midiOf(pn('D4')),0.08,1.8,{type:'bend',from:midiOf(pn('Eb4'))});
+    else if(spec.sigim==='slide1')tone(midiOf(pn('Eb4')),0.08,1.8,{type:'slide',from:midiOf(pn('F4'))});
+    else if(spec.sigim==='vib1')tone(midiOf(pn('G4')),0.08,1.9,{type:'vib',depth:18,rate:5.0});
+    else tone(midiOf(pn('G4')),0.08,1.8);
+    return;
+  }
+  if(spec.jang){playJangdan(spec.jang,2);return;}
+}
+function renderDrill(si){
+  var st=CUR[si];DR.si=si;DR.cur=genDrill(st.drill.type);
+  var d=DR.cur,h='<div class="dr-q">'+d.q+'</div>';
+  if(d.plays.length){
+    h+='<div class="dr-play">';
+    for(var i=0;i<d.plays.length;i++)h+='<button class="dr-pb" data-t="drplay'+i+'" onclick="drillPlayIdx('+i+')">\u25B6 '+d.plays[i][0]+'</button>';
+    h+='<button class="dr-pb sec2" data-t="drnext" onclick="renderDrill('+si+')">\u21BB \uC0C8 \uBB38\uC81C</button></div>';
+  }else{
+    h+='<div class="dr-play"><button class="dr-pb sec2" data-t="drnext" onclick="renderDrill('+si+')">\u21BB \uC0C8 \uBB38\uC81C</button></div>';
+  }
+  h+='<div class="dr-opts'+(d.opts.length<=2?' one':'')+'">';
+  for(var j=0;j<d.opts.length;j++)h+='<button class="dr-o" data-t="dro'+j+'" id="dro'+j+'" onclick="drillAns('+j+')">'+d.opts[j]+'</button>';
+  h+='</div><div class="dr-r" id="drR"></div><div class="dr-score" id="drS">\uC815\uB2F5 '+DR.ok+' / '+DR.tot+'</div>';
+  document.getElementById('drillBox').innerHTML=h;
+}
+function drillPlayIdx(i){drillPlay(DR.cur.plays[i][1]);}
+function drillAns(i){
+  var d=DR.cur;if(!d||d.done)return;d.done=true;DR.tot++;
+  var ok=(i===d.ans);if(ok)DR.ok++;
+  for(var k=0;k<d.opts.length;k++){
+    var el=document.getElementById('dro'+k);if(!el)continue;
+    if(k===d.ans)el.className='dr-o ok';else if(k===i)el.className='dr-o no';
+  }
+  var r=document.getElementById('drR');
+  r.className='dr-r '+(ok?'ok':'no');
+  r.innerHTML=(ok?'\uC815\uB2F5!':'\uB2E4\uC2DC \u2014 ')+(d.exp?' '+d.exp:'');
+  document.getElementById('drS').textContent='\uC815\uB2F5 '+DR.ok+' / '+DR.tot;
+}
+
+/* ══ 받아쓰기 ══ */
+var DT={ans:null,inp:[],dur:1,acc:null,si:0,cfg:null};
+function genMelody(cfg){
+  var beats=cfg.beats,durs=cfg.durs.slice(),out=[],left=beats;
+  var guard=0;
+  while(left>0.001&&guard++<40){
+    var cand=durs.filter(function(d){return d<=left+0.001;});
+    if(!cand.length)break;
+    var d=pick(cand);
+    var isRest=cfg.rest&&rnd(6)===0&&out.length>0&&left-d>0.001;
+    out.push({n:isRest?null:pn(cfg.pool[rnd(cfg.pool.length)].replace('n','')),d:d,rest:isRest});
+    left-=d;
+  }
+  if(out.length&&!out[out.length-1].rest===false){}
+  if(out.length){var last=out[out.length-1];if(last.rest){last.rest=false;last.n=pn(cfg.pool[0].replace('n',''));}}
+  for(var i=0;i<out.length;i++)if(out[i].rest)out[i].n=null;
+  return out;
+}
+function dictItems(arr){var r=[];for(var i=0;i<arr.length;i++)r.push({n:arr[i].n,d:arr[i].d});return r;}
+function newDict(si){
+  var st=CUR[si],cfg=st.dict;DT.si=si;DT.cfg=cfg;
+  DT.ans=genMelody(cfg);DT.inp=[];DT.dur=cfg.durs[cfg.durs.length>2?1:0];DT.acc=null;
+  drawDict();
+}
+function durName(d){
+  return d===4?'\uC628':d===3?'\uC810\u2669\u2669':d===2?'2\uBD84':d===1.5?'\uC810\u2669':d===1?'4\uBD84':d===0.75?'\uC810\u266A':d===0.5?'8\uBD84':'16\uBD84';
+}
+function drawDict(){
+  var cfg=DT.cfg,st=CUR[DT.si];
+  var h='<div class="dt-h">\uBBF8\uB2C8 \uCC44\uBCF4</div>';
+  h+='<div class="dt-meta">'+(cfg.sanjo?'\uBCF8\uCCAD C \u00B7 ':'')+'\uC870\uD45C '+(cfg.key==='C'?'\uC5C6\uC74C':cfg.key)+' \u00B7 '+cfg.ts[0]+'/'+cfg.ts[1]+' \u00B7 \u2669='+cfg.bpm+'</div>';
+  h+='<div class="dt-tools"><button class="dt-t on" data-t="dtplay" onclick="dictPlay()">\u25B6 \uB4E3\uAE30</button>';
+  h+='<button class="dt-t" data-t="dtslow" onclick="dictPlay(0.65)">\u25B6 \uB290\uB9AC\uAC8C</button>';
+  h+='<button class="dt-t" data-t="dtclick" onclick="dictPlay(1,true)">\u25B6 \uBC15\uD45C \uAC19\uC774</button></div>';
+  h+='<div class="staffbox">'+renderStaff(dictItems(DT.inp),{key:cfg.key,ts:cfg.ts,labels:false})+'</div>';
+  h+='<div class="dt-grp">\uAE38\uC774</div><div class="dt-tools">';
+  for(var i=0;i<cfg.durs.length;i++){var d=cfg.durs[i];h+='<button class="dt-t'+(DT.dur===d?' on':'')+'" data-t="dtd'+i+'" onclick="setDur('+d+')">'+durName(d)+'</button>';}
+  h+='</div>';
+  h+='<div class="dt-grp">\uC74C</div><div class="dt-tools">';
+  for(var j=0;j<cfg.pool.length;j++){
+    var raw=cfg.pool[j],nn=pn(raw.replace('n','')),lbl=nm(nn);
+    if(raw.indexOf('n')>0)lbl=nn.let+'\u266E';
+    h+='<button class="dt-t" data-t="dtn'+j+'" onclick="addNote('+j+')">'+lbl+'</button>';
+  }
+  if(cfg.rest)h+='<button class="dt-t" data-t="dtrest" onclick="addRest()">\uC26C\uD45C</button>';
+  h+='</div>';
+  h+='<div class="dt-act"><button class="dt-a" data-t="dtundo" onclick="dictUndo()">\u21B6 \uB418\uB3CC\uB9AC\uAE30</button>';
+  h+='<button class="dt-a" data-t="dtclear" onclick="dictClear()">\uC9C0\uC6B0\uAE30</button>';
+  h+='<button class="dt-a main" data-t="dtcheck" onclick="dictCheck()">\uCC44\uC810</button></div>';
+  h+='<div class="dt-r" id="dtR"></div><div class="dt-ans" id="dtA"></div>';
+  h+='<div class="dt-act"><button class="dt-a" data-t="dtnew" onclick="newDict('+DT.si+')">\u21BB \uC0C8 \uBB38\uC81C</button></div>';
+  document.getElementById('dictBox').innerHTML=h;
+}
+function setDur(d){DT.dur=d;drawDict();}
+function addNote(j){
+  var raw=DT.cfg.pool[j],n=pn(raw.replace('n',''));
+  if(raw.indexOf('n')>0)n.acc=0;
+  DT.inp.push({n:n,d:DT.dur});drawDict();
+}
+function addRest(){DT.inp.push({n:null,d:DT.dur});drawDict();}
+function dictUndo(){DT.inp.pop();drawDict();}
+function dictClear(){DT.inp=[];drawDict();}
+function dictPlay(rate,withClick){
+  var cfg=DT.cfg,seq=[];
+  for(var i=0;i<DT.ans.length;i++)seq.push({n:DT.ans[i].n,d:DT.ans[i].d});
+  playSeq(seq,cfg.bpm*(rate||1),!!withClick,cfg.ts[0]);
+}
+function dictCheck(){
+  var a=DT.ans,b=DT.inp,ok=true,marks=[];
+  for(var i=0;i<Math.max(a.length,b.length);i++){
+    var A=a[i],B=b[i],good=false;
+    if(A&&B){
+      var pitchOk=(!A.n&&!B.n)||(A.n&&B.n&&midiOf(A.n)===midiOf(B.n));
+      good=pitchOk&&Math.abs(A.d-B.d)<0.001;
+    }
+    if(!good)ok=false;
+    if(B)marks.push({n:B.n,d:B.d,cls:good?'ok':'no'});
+  }
+  var r=document.getElementById('dtR');
+  r.className='dt-r '+(ok?'ok':'no');
+  r.innerHTML=ok?'\uC815\uD655\uD574\uC694! \uC74C\uACFC \uAE38\uC774 \uBAA8\uB450 \uB9DE\uC558\uC5B4\uC694.':'\uC544\uC9C1 \uC544\uB2C8\uC5D0\uC694 \u2014 \uCD08\uB85D=\uB9DE\uC74C, \uBE68\uAC15=\uD2C0\uB9BC. \uC544\uB798 \uC815\uB2F5\uACFC \uBE44\uAD50\uD574 \uBCF4\uC138\uC694.';
+  document.getElementById('dictBox').querySelector('.staffbox').innerHTML=renderStaff(marks,{key:DT.cfg.key,ts:DT.cfg.ts});
+  var ansItems=[];for(var k=0;k<a.length;k++)ansItems.push({n:a[k].n,d:a[k].d});
+  document.getElementById('dtA').innerHTML='<div class="lab">\uC815\uB2F5</div><div class="staffbox">'+renderStaff(ansItems,{key:DT.cfg.key,ts:DT.cfg.ts,labels:true})+'</div>';
+}
+
+/* ══ 진행 상태 ══ */
+var KEY='chaebo-v1';
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return{};}}
+function save(s){try{localStorage.setItem(KEY,JSON.stringify(s));}catch(e){}}
+var ST=load();if(!ST.done)ST.done={};
+
+function renderHome(){
+  var w=0,s=0,hw='',hs='';
+  for(var i=0;i<CUR.length;i++){
+    var c=CUR[i],dn=!!ST.done[c.id];
+    if(c.tr==='w'){if(dn)w++;}else{if(dn)s++;}
+    var row='<button class="stg'+(dn?' done':'')+(c.tr==='s'?' sanjo':'')+'" data-t="stg-'+c.id+'" onclick="openLesson('+i+')">'
+      +'<div class="num">'+(c.tr==='s'?'S':'')+c.n+'</div>'
+      +'<div class="txt"><div class="t">'+c.t+'</div><div class="d">'+c.lead+'</div></div>'
+      +'<div class="chk">'+(dn?'\u2713':'\u203A')+'</div></button>';
+    if(c.tr==='w')hw+=row;else hs+=row;
+  }
+  document.getElementById('mapW').innerHTML=hw;
+  document.getElementById('mapS').innerHTML=hs;
+  var tot=w+s,pct=Math.round(tot/CUR.length*100);
+  document.getElementById('pPct').innerHTML=pct+'<small>%</small>';
+  document.getElementById('pBar').style.width=pct+'%';
+  document.getElementById('pDone').textContent=tot;
+  document.getElementById('pW').textContent=w;
+  document.getElementById('pS').textContent=s;
+}
+function openLesson(i){
+  var c=CUR[i],dn=!!ST.done[c.id];
+  DR.ok=0;DR.tot=0;
+  var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  h+='<div class="l-head"><div class="l-day'+(c.tr==='s'?' sanjo':'')+'">'+(c.tr==='s'?'\uC0B0\uC870 \uD2B8\uB799 S':'\uC11C\uC591 \uB098\uC120 ')+c.n+'</div>';
+  h+='<div class="l-t">'+c.t+'</div><div class="l-lead">'+c.lead+'</div></div>';
+  h+='<div class="sec"><div class="sec-h"><div class="n'+(c.tr==='s'?' a':'')+'">1</div>\uAC1C\uB150</div>'+c.concept+'</div>';
+  if(c.ex&&c.ex.length){
+    h+='<div class="sec"><div class="sec-h"><div class="n'+(c.tr==='s'?' a':'')+'">2</div>\uADC0\uB85C \uD655\uC778</div><div class="cex"><div class="cex-t">\uD83C\uDFA7 \uB4E4\uC5B4\uBCF4\uAE30</div><div class="cex-btns">';
+    for(var e=0;e<c.ex.length;e++)h+='<button class="cex-b" data-t="ex'+e+'" onclick="playEx('+i+','+e+')">'+c.ex[e][0]+'</button>';
+    h+='</div></div>';
+    if(c.ex[0][1]!=='X'){
+      h+='<div class="staffbox">'+renderStaff(seqOf(pnl(c.ex[0][1]),1),{key:c.dict.key,labels:true,bar:false})+'</div>';
+    }
+    h+='</div>';
+  }
+  h+='<div class="sec"><div class="sec-h"><div class="n'+(c.tr==='s'?' a':'')+'">3</div>\uB4DC\uB9B4</div><div class="drill" id="drillBox"></div></div>';
+  h+='<div class="sec"><div class="sec-h"><div class="n'+(c.tr==='s'?' a':'')+'">4</div>\uBBF8\uB2C8 \uCC44\uBCF4</div><div class="dict" id="dictBox"></div></div>';
+  h+='<button class="donebtn'+(dn?' off':'')+'" data-t="done" id="doneBtn" onclick="toggleDone(\''+c.id+'\')">'+(dn?'\u2713 \uC644\uB8CC\uD568 \u2014 \uD574\uC81C\ud558\uae30':'\uC774 \uB2E8\uACC4 \uC644\uB8CC')+'</button>';
+  document.getElementById('lessonBody').innerHTML=h;
+  document.getElementById('home').style.display='none';
+  document.getElementById('lesson').style.display='block';
+  renderDrill(i);newDict(i);
+  window.scrollTo(0,0);
+}
+function toggleDone(id){
+  if(ST.done[id])delete ST.done[id];else ST.done[id]=1;
+  save(ST);
+  var b=document.getElementById('doneBtn');
+  if(b){var dn=!!ST.done[id];b.className='donebtn'+(dn?' off':'');b.textContent=dn?'\u2713 \uC644\uB8CC\uD568 \u2014 \uD574\uC81C\ud558\uae30':'\uC774 \uB2E8\uACC4 \uC644\uB8CC';}
+}
+function goHome(){
+  document.getElementById('lesson').style.display='none';
+  document.getElementById('home').style.display='block';
+  renderHome();window.scrollTo(0,0);
+}
+
+/* ══ 참고 사전 ══ */
+var YUL=[['\uD669\uC885 \u9EC3','E\u266D','F'],['\uB300\uB824 \u5927','E','F\u266F'],['\uD0DC\uC8FC \u592A','F','G'],['\uD611\uC885 \u5939','F\u266F','A\u266D'],
+['\uACE0\uC120 \u59D1','G','A'],['\uC911\uB824 \u4EF2','A\u266D','B\u266D'],['\uC720\uBE48 \u857E','A','B'],['\uC784\uC885 \u6797','B\u266D','C'],
+['\uC774\uCE59 \u5937','B','C\u266F'],['\uB0A8\uB824 \u5357','C','D'],['\uBB34\uC5ED \u7121','C\u266F','E\u266D'],['\uC751\uC885 \u61C9','D','E']];
+var REF={
+ jang:[['\uC9C4\uC591','3\uBD84\uBC15 \u00B7 18/8 \u00B7 1\uB9C8\uB514 \u00B7 \uAC00\uC7A5 \uB290\uB9BC'],['\uC911\uBAA8\uB9AC','2\uBD84\uBC15 \u00B7 3/4 \u00B7 4\uB9C8\uB514 \u00B7 \uB290\uB9BC~\uC911\uAC04'],
+  ['\uC911\uC911\uBAA8\uB9AC','3\uBD84\uBC15 \u00B7 12/8 \u00B7 1\uB9C8\uB514 \u00B7 \uC911\uAC04'],['\uC790\uC9C4\uBAA8\uB9AC','3\uBD84\uBC15 \u00B7 12/8 \u00B7 1\uB9C8\uB514 \u00B7 \uBE60\uB984'],
+  ['\uD718\uBAA8\uB9AC','3\uBD84\uBC15 \u00B7 12/8 \u00B7 1\uB9C8\uB514 \u00B7 \uB354 \uBE60\uB984'],['\uC5C7\uBAA8\uB9AC','3+2+3+2 \u00B7 10/8 \u00B7 1\uB9C8\uB514 \u00B7 \uC5C7\uBC15'],
+  ['12/8 \uC0BC\uD615\uC81C','\uC911\uC911\u00B7\uC790\uC9C4\u00B7\uD718\uBAA8\uB9AC\uB294 \uBC15\uC790\uD45C \uB3D9\uC77C \u2014 \uD15C\uD3EC\uB85C\uB9CC \uAC08\uB9BC']],
+ meter:[['\uB2E8\uC21C\uBC15\uC790(2\uBD84\uBC15)','\uBC15 = 4\uBD84\uC74C\uD45C, \uBC15\uC744 2\uB85C \uB098\uB214 \u00B7 2/4 3/4 4/4'],
+  ['\uBCF5\uD569\uBC15\uC790(3\uBD84\uBC15)','\uBC15 = \uC8104\uBD84\uC74C\uD45C, \uBC15\uC744 3\uC73C\uB85C \uB098\uB214 \u00B7 6/8 9/8 12/8'],
+  ['\uAC00\uC0B0\uBC15(\uBCC0\uBC15)','2\uC640 3\uC774 \uC12E\uC784 \u00B7 5/8 7/8 10/8'],
+  ['\uC14B\uC787\uB2E8','\uB2E8\uC21C\uBC15\uC790 \uC548\uC5D0\uC11C \uD55C \uBC15\uC744 3\uB4F1\uBD84 \u2014 3\uBD84\uBC15\uC73C\uB85C \uAC00\uB294 \uB2E4\uB9AC'],
+  ['\uD5E4\uBBF8\uC62C\uB77C','3\uBC15 \uB450 \uB9C8\uB514(3+3)\uB97C 2\uBC15 \uC138 \uB369\uC5B4\uB9AC(2+2+2)\uB85C']],
+ key:[['\u266F \uBD99\uB294 \uC21C\uC11C','\uD30C \uB3C4 \uC194 \uB808 \uB77C \uBBF8 \uC2DC (F C G D A E B)'],
+  ['\u266D \uBD99\uB294 \uC21C\uC11C','\uC2DC \uBBF8 \uB77C \uB808 \uC194 \uB3C4 \uD30C (B E A D G C F)'],
+  ['\u266F\uC870 \uC73C\uB73B\uC74C','\uB9C8\uC9C0\uB9C9 \u266F\uC758 \uBC18\uC74C \uC704'],['\u266D\uC870 \uC73C\uB73B\uC74C','\uB9C8\uC9C0\uB9C9\uC5D0\uC11C \uB450 \uBC88\uC9F8 \u266D'],
+  ['\uB098\uB780\uD55C\uC870','\uC7A5\uC870\uC640 \uADF8 \uB2E83\uB3C4 \uC544\uB798 \uB2E8\uC870\uAC00 \uC870\uD45C \uACF5\uC720 (C\uC7A5 \u2194 a\uB2E8)'],
+  ['\uC784\uC2DC\uD45C \uBC94\uC704','\uAC19\uC740 \uB9C8\uB514\u00B7\uAC19\uC740 \uB192\uC774\uC5D0\uC11C\uB9CC \uC720\uD6A8. \uB9C8\uB514\uC120 \uB118\uC73C\uBA74 \uD574\uC81C']],
+ intv:[['\uC7A52\uB3C4','2\uBC18\uC74C \u00B7 \uACE0\uC694\uD55C \uBC24 \uCCAB \uB450 \uC74C'],['\uB2E82\uB3C4','1\uBC18\uC74C \u00B7 Jaws'],
+  ['\uC7A53\uB3C4','4\uBC18\uC74C \u00B7 \uBC1D\uC74C(\uC7A5\uC870)'],['\uB2E83\uB3C4','3\uBC18\uC74C \u00B7 \uC5B4\uB450\uC6C0(\uB2E8\uC870)'],
+  ['\uC644\uC8044\uB3C4','5\uBC18\uC74C \u00B7 \uACB0\uD63C\uD589\uC9C4\uACE1'],['\uC99D4\uB3C4(tritone)','6\uBC18\uC74C \u00B7 \uAC00\uC7A5 \uBD88\uC548\uD55C \uC0C9'],
+  ['\uC644\uC8045\uB3C4','7\uBC18\uC74C \u00B7 \uBC18\uC9DD\uBC18\uC9DD \uC791\uC740 \uBCC4'],['\uC7A56\uB3C4','9\uBC18\uC74C'],['\uB2E87\uB3C4','10\uBC18\uC74C'],['\uC644\uC7848\uB3C4','12\uBC18\uC74C \u00B7 \uC625\uD0C0\uBE0C']],
+ sig:[['\uBCF8\uCCAD','C \u2014 \uC911\uC2EC\uC74C. \uC2E4\uC74C \uC544\uB2C8\uACE0 \uAC04\uACA9 \uAE30\uC900\uC73C\uB85C \uACE0\uC815'],
+  ['\uAF3A\uB294\uCCAD','D \u2014 E\u266D\uB97C \uAE38\uAC8C \uC9C0\uC18D\uD55C \uB4A4 D\uB85C \uAF3A\uC5B4 \uB0B4\uB9BC'],
+  ['\uAF3A\uAE30 \uC804 \uC74C','E\u266D \u2014 \uAE38\uAC8C \uC4F0\uB294 \uC2E4\uC74C. \uC7A5\uC2DD\uC74C \uC544\uB2D8'],
+  ['\uD758\uB9AC\uB294\uCCAD','F \u2014 F\uB97C \uAE38\uAC8C \uC9C0\uC18D\uD55C \uB4A4 E\u266D\uB85C \uD758\uB824 \uB0B4\uB9BC'],
+  ['\uB5A0\uB294\uCCAD','G \u2014 \uD3ED\uB113\uAC8C \uB5A8\uAE30(\uC694\uC131)'],
+  ['\uC717\uAF3A\uB294\uCCAD','A\u266E \u2014 B\u266D\uB97C \uAE38\uAC8C \uC9C0\uC18D\uD55C \uB4A4 A\uB85C \uAF3A\uC5B4 \uB0B4\uB9BC'],
+  ['\uB354\uC74C\uCCAD','B\u266D'],
+  ['\uD45C\uAE30 \uADDC\uCE59','Cm \uC870\uD45C(\u266D3) + A\uB9CC \u266E \uC784\uC2DC\uD45C'],
+  ['\uBCC0\uCCAD','Fm(\u266D4) \u00B7 Gm(\u266D2) \u2014 \uAC01 \uC870\uD45C + 6\uC74C\uB9CC \u266E'],
+  ['\uD575\uC2EC','\uC0B0\uC870\uC5D4 \uC74C\uAC00 \uC5C6\uB294 \uC7A5\uC2DD\uC74C\uC774 \uC5C6\uC74C \u2014 \uC2DC\uAE40\uC0C8\uB294 \uC774\uB3D9 \uBC29\uC2DD']],
+ sym:[['\uC55E\uAF3E\uBBF8\uC74C','\uBCF8\uC74C \uC55E\uC744 \uC9E7\uAC8C \uC2A4\uCE68 \u00B7 \uC74C\uAC00 \uC5C6\uC74C'],['\uD2B8\uB9B4 tr','\uBCF8\uC74C-\uC717\uC74C \uBE60\uB974\uAC8C \uAD50\uB300'],
+  ['\uBAA8\uB974\uB374\uD2B8','\uBCF8\uC74C-\uC606\uC74C-\uBCF8\uC74C'],['\uD134','\uC704-\uBCF8-\uC544\uB798-\uBCF8 \uD68C\uC804'],
+  ['\uC2A4\uD0C0\uCE74\uD1A0 .','\uC9E7\uAC8C \uB04A\uC5B4 \u00B7 \uC74C\uAC00 \uC548 \uBC14\uB01C'],['\uB808\uAC00\uD1A0 \u2312','\uC774\uC5B4\uC11C \uB9E4\uB044\uB7FD\uAC8C'],
+  ['\uC545\uC13C\uD2B8 &gt;','\uADF8 \uC74C\uB9CC \uB3C4\uB4DC\uB77C\uC9C0\uAC8C'],['\uD14C\uB204\uD1A0 \u2013','\uC74C\uAC00\uB97C \uAF49 \uB20C\uB7EC \uCC44\uC6C0'],
+  ['\uC810\uC74C\uD45C','\uC6D0\uB798 \uAE38\uC774 + \uC808\uBC18'],['\uC26C\uD45C','\uC18C\uB9AC \uC5C6\uB294 \uC74C\uAC00 \u2014 \uBE7C\uBA74 \uB9C8\uB514\uAC00 \uC548 \uB9DE\uC74C']],
+ proc:[['\uC11C\uC591 1','\uC804\uCCB4 \uB4E3\uAE30 \u2014 2\uBD84\uBC15\uC778\uC9C0 3\uBD84\uBC15\uC778\uC9C0'],['\uC11C\uC591 2','\uC73C\uB73B\uC74C \uCC3E\uAE30'],
+  ['\uC11C\uC591 3','\uAD6C\uC870\uC74C vs \uC7A5\uC2DD\uC74C \uAC00\uB824\uB0B4\uAE30 \u2014 \uC7A5\uC2DD\uC74C\uC740 \uC74C\uAC00 \uC81C\uC678'],
+  ['\uC11C\uC591 4~7','\uB9AC\uB4EC \uACE8\uACA9 \u2192 \uC74C\uB192\uC774 \u2192 \uC7A5\uC2DD\u00B7\uC8FC\uBC95 \u2192 \uAC80\uC0B0'],
+  ['\uC0B0\uC870 1','\uC804\uCCB4 \uB4E3\uAE30 \u2014 \uC7A5\uB2E8\u00B7\uD15C\uD3EC\uBD80\uD130 (\uBC15\uC790\uD45C \uACB0\uC815)'],['\uC0B0\uC870 2','\uBCF8\uCCAD \uCC3E\uAE30 (= C\uB85C \uB460)'],
+  ['\uC0B0\uC870 3','\uC2DC\uAE40\uC0C8 \uD310\uBCC4 \u2014 \uAC78\uB7EC\uB0BC \uC7A5\uC2DD\uC74C \uC5C6\uC74C'],
+  ['\uC0B0\uC870 4~7','\uB9AC\uB4EC \uACE8\uACA9 \u2192 \uC74C\uB192\uC774(7\uCCAD) \u2192 \uC2DC\uAE40\uC0C8 \uD45C\uC2DC \u2192 \uAC80\uC0B0'],
+  ['\uACF5\uD1B5 \uC6D0\uCE59','\uC74C\uB192\uC774\uBD80\uD130 \uC7A1\uC73C\uBA74 \uC74C\uAC00\uAC00 \uBB34\uB108\uC9D0. \uB9AC\uB4EC \uACE8\uACA9 \uBA3C\uC800']]
+};
+var REFTABS=[['yul','\uC728\uBA85'],['jang','\uC7A5\uB2E8'],['meter','\uBC15\uC790\uD45C'],['key','\uC870\uD45C'],['intv','\uC74C\uC815'],['sig','\uC0B0\uC870 \uCCAD'],['sym','\uAE30\uD638'],['proc','\uCC44\uBCF4 \uC808\uCC28']];
+var YULMODE='jeongak';
+function openRef(k){
+  var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  h+='<div class="l-head"><div class="l-day">\uCC38\uACE0 \uC0AC\uC804 \u00B7 REFERENCE</div><div class="l-t">\uC728\uBA85 \u00B7 \uC7A5\uB2E8 \u00B7 \uC74C\uC815 \u00B7 \uAE30\uD638</div>';
+  h+='<div class="l-lead">\uACF5\uBD80 \uC911 \uC5B8\uC81C\uB4E0 \uCC3E\uC544\uBCF4\uB294 \uC0C1\uC124 \uCC38\uACE0.</div></div>';
+  h+='<div class="ref-nav">';
+  for(var i=0;i<REFTABS.length;i++)h+='<button data-t="ref-'+REFTABS[i][0]+'" class="'+(REFTABS[i][0]===k?'on':'')+'" onclick="refSwitch(\''+REFTABS[i][0]+'\')">'+REFTABS[i][1]+'</button>';
+  h+='</div><div id="refBody"></div>';
+  document.getElementById('lessonBody').innerHTML=h;
+  document.getElementById('home').style.display='none';
+  document.getElementById('lesson').style.display='block';
+  refSwitch(k);window.scrollTo(0,0);
+}
+function refSwitch(k){
+  var btns=document.querySelectorAll('.ref-nav button');
+  for(var i=0;i<btns.length;i++)btns[i].className=(REFTABS[i][0]===k?'on':'');
+  var bd=document.getElementById('refBody'),h='';
+  if(k==='yul'){
+    h+='<div class="tog"><button data-t="yul-j" class="'+(YULMODE==='jeongak'?'on':'')+'" onclick="setYul(\'jeongak\')">\uC815\uC545 \uD669\uC885=E\u266D</button>';
+    h+='<button data-t="yul-s" class="'+(YULMODE==='sanjo'?'on':'')+'" onclick="setYul(\'sanjo\')">\uC0B0\uC870 \uC784\uC885=C</button></div>';
+    h+='<ul class="ref-list">';
+    for(var y=0;y<YUL.length;y++)h+='<li><span class="term">'+YUL[y][0]+'</span><span class="desc">'+(YULMODE==='jeongak'?YUL[y][1]:YUL[y][2])+'</span></li>';
+    h+='</ul>';
+  }else{
+    var arr=REF[k]||[];
+    h+='<ul class="ref-list">';
+    for(var j=0;j<arr.length;j++)h+='<li><span class="term">'+arr[j][0]+'</span><span class="desc">'+arr[j][1]+'</span></li>';
+    h+='</ul>';
+  }
+  bd.innerHTML=h;
+}
+function setYul(m){YULMODE=m;refSwitch('yul');}
+renderHome();
+</script>
+</body>
+</html>
