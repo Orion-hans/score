@@ -172,6 +172,62 @@ header .sub{font-size:.76rem;color:var(--muted);font-family:var(--mono);font-wei
 .tog{display:flex;gap:6px;margin:10px 0;}
 .tog button{flex:1;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:.81rem;font-weight:700;color:var(--muted);}
 .tog button.on{background:var(--amber);border-color:var(--amber);color:#0a1013;}
+
+/* ══ 태블릿 ══ */
+@media (min-width:700px){
+  html,body{font-size:17.5px;line-height:1.65;}
+  .wrap{max-width:840px;padding:28px 26px 90px;}
+  header h1{font-size:1.9rem;}
+  header .sub{font-size:.82rem;}
+  .prog{padding:18px 20px;border-radius:18px;}
+  .prog-pct{font-size:1.9rem;}
+  .prog-stats{gap:18px;font-size:.84rem;}
+  .bar{height:10px;}
+  .map-h{font-size:.8rem;margin:26px 2px 12px;}
+  .stg{padding:16px 18px;border-radius:15px;gap:15px;}
+  .stg .num{width:38px;height:38px;font-size:.9rem;border-radius:11px;}
+  .stg .t{font-size:1.04rem;}
+  .stg .d{font-size:.82rem;}
+  .methodbtn,.toolbtn,.refbtn{padding:18px 18px;border-radius:15px;}
+  .l-t{font-size:1.6rem;}
+  .l-lead{font-size:1rem;}
+  .sec p{font-size:1rem;}
+  .ctbl{font-size:.9rem;}
+  .ctbl th{font-size:.83rem;padding:9px 12px;}
+  .ctbl td{padding:9px 12px;}
+  .cnote{font-size:.93rem;padding:14px 16px;}
+  .dr-q{font-size:1.04rem;}
+  .dr-o{padding:14px 12px;font-size:.94rem;}
+  .dr-pb{padding:11px 18px;font-size:.92rem;}
+  .dt-t{padding:9px 14px;font-size:.86rem;min-width:44px;}
+  .dt-a{padding:12px;font-size:.92rem;}
+  .dt-h{font-size:1.02rem;}
+  .dt-meta,.dt-hint{font-size:.83rem;}
+  .dt-grp,.ap-grp{font-size:.75rem;}
+  .cex-b{padding:10px 16px;font-size:.9rem;}
+  .ref-list li{font-size:.92rem;padding:10px 3px;}
+  .ref-nav button{padding:10px 15px;font-size:.85rem;}
+  .ap-wave{height:150px;}
+  .ap-over{height:56px;}
+  .ap-info{font-size:.88rem;}
+  .staffbox,.protobox{padding:14px 8px;border-radius:14px;}
+}
+/* ══ 노트북·데스크톱 ══ */
+@media (min-width:1080px){
+  html,body{font-size:19px;}
+  .wrap{max-width:1020px;padding:34px 30px 100px;}
+  header h1{font-size:2.1rem;}
+  #mapW,#mapS{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch;}
+  #mapW .stg,#mapS .stg{margin-bottom:0;}
+  .dr-opts{grid-template-columns:1fr 1fr;gap:9px;}
+  .dr-opts.one{grid-template-columns:1fr 1fr;}
+  .ap-wave{height:180px;}
+  .ref-list .term{flex:0 0 26%;}
+  .l-t{font-size:1.75rem;}
+}
+@media (min-width:1400px){
+  .wrap{max-width:1120px;}
+}
 </style>
 </head>
 <body>
@@ -188,18 +244,17 @@ header .sub{font-size:.76rem;color:var(--muted);font-family:var(--mono);font-wei
       </div>
       <div class="bar"><i id="pBar" style="width:0%"></i></div>
     </div>
-    <div class="map-h method">채보법 — 어떻게 채보할 것인가</div>
-    <button class="methodbtn" data-t="method" onclick="openMethod()"><b>채보법 7단계</b><span>종이와 연필로 실제 채보할 때의 절차와 근거 · 프로토기보 · 리듬 속기 · 산조 채보의 특수 문제</span></button>
-    <div class="map-h">서양 채보 나선 · 리듬 1~7 → 음높이 8~13 → 통합 14~16</div>
+    <button class="methodbtn" data-t="method" onclick="openMethod()"><b>채보의 단계</b></button>
+    <div class="map-h">Study</div>
     <div id="mapW"></div>
     <div class="map-h sanjo">산조 채보 트랙 · S1~S5</div>
     <div id="mapS"></div>
     <div class="map-h tool">실제 채보</div>
-    <button class="toolbtn" data-t="audio" onclick="openAudio()"><b>음원 구간 반복</b><span>파일 불러와 파형 보고 한 장단씩 반복 · 음정 유지 감속</span></button>
-    <button class="toolbtn" data-t="proto" onclick="openProto()"><b>프로토기보 연습</b><span>종이 방식 그대로 — 리듬 시작점 찍고 도수 올리기</span></button>
-    <button class="toolbtn" data-t="pad" onclick="openPad()"><b>채보 노트</b><span>빈 오선에 자유 기보 · 음원 들으며 직접 받아적기</span></button>
-    <button class="toolbtn" data-t="real" onclick="openReal()"><b>가락 채보</b><span>실제 가락을 한 마디씩 듣고 받아적기</span></button>
-    <button class="refbtn" data-t="ref" onclick="openRef('yul')">참고 사전 — 율명 · 장단 · 음정 · 기호</button>
+    <button class="toolbtn" data-t="audio" onclick="openAudio()"><b>음원 구간 반복</b></button>
+    <button class="toolbtn" data-t="proto" onclick="openProto()"><b>프로토기보 연습</b></button>
+    <button class="toolbtn" data-t="pad" onclick="openPad()"><b>채보 노트</b></button>
+    <button class="toolbtn" data-t="real" onclick="openReal()"><b>가락 채보</b></button>
+    <button class="refbtn" data-t="ref" onclick="openRef('yul')">참고 사전</button>
   </div>
   <div id="lesson"><div id="lessonBody"></div></div>
 </div>
@@ -328,6 +383,13 @@ function vexKey(n){
   return s+'/'+n.oct;
 }
 function vexOK(){return !!(window.Vex&&window.Vex.Flow);}
+/* 화면 폭에 따라 악보 확대 배율 */
+function staffScale(){
+  var w=window.innerWidth||390;
+  if(w>=1080)return 1.62;
+  if(w>=700)return 1.3;
+  return 1;
+}
 var KEYSIG={
  'C':[],'G':['F'],'D':['F','C'],'A':['F','C','G'],'E':['F','C','G','D'],
  'F':['B'],'Bb':['B','E'],'Eb':['B','E','A'],'Ab':['B','E','A','D'],'Db':['B','E','A','D','G']
@@ -363,7 +425,7 @@ function drawStaff(host,items,opt){
     stave.setContext(c).draw();
     host.__stf={top:stave.getYForLine(0),bot:stave.getYForLine(4),H:H,W:W,key:key,
                 nat:opt.nat||null,svg:host.querySelector('svg')};
-    if(!items.length)return;
+    if(!items.length){apFitSvg(host,W,H);return;}
     var tick=[],segs=[[]],acc=0,total=0,noteRefs=[];
     var kmap=keyAccMap(key),mstate={};
     for(var i=0;i<items.length;i++){
@@ -430,10 +492,21 @@ function drawStaff(host,items,opt){
       try{nxArr.push({i:noteRefs[r2].i,x:noteRefs[r2].note.getAbsoluteX()});}catch(e7){}
     }
     host.__stf.noteX=nxArr;
+    apFitSvg(host,W,H);
   }catch(err){
     host.innerHTML='<div class="stf-fail">\uC545\uBCF4 \uB80C\uB354 \uC624\uB958</div>';
     window.__vfLastErr=String(err&&err.stack||err);
   }
+}
+/* SVG 를 컨테이너 폭에 맞추고 화면 크기에 따라 확대 */
+function apFitSvg(host,W,H){
+  var svg=host.querySelector('svg');if(!svg)return;
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+  svg.removeAttribute('width');svg.removeAttribute('height');
+  svg.style.width='100%';
+  svg.style.maxWidth=Math.round(W*staffScale())+'px';
+  svg.style.height='auto';
 }
 /* 탭 좌표 → 음높이 */
 function stfInfo(host){if(typeof host==='string')host=document.getElementById(host);return host&&host.__stf?host.__stf:null;}
@@ -1326,9 +1399,8 @@ function padSave(){try{localStorage.setItem(PADKEY,JSON.stringify({key:PAD.key,t
 function openPad(){
   padLoad();
   var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
-  h+='<div class="l-head"><div class="l-day">\uCC44\uBCF4 \uB178\uD2B8 \u00B7 NOTATION PAD</div>';
+  h+='<div class="l-head">';
   h+='<div class="l-t">\uC790\uC720 \uAE30\uBCF4</div>';
-  h+='<div class="l-lead">\uC74C\uC6D0\uC744 \uD2C0\uC5B4\uB193\uACE0 \uB4E4\uC73C\uBA74\uC11C \uC9C1\uC811 \uBC1B\uC544\uC801\uC73C\uC138\uC694. \uC4F4 \uAC83\uC744 \uC7AC\uC0DD\uD574 \uAC80\uC0B0\uD560 \uC218 \uC788\uC5B4\uC694.</div></div>';
   h+='<div id="padBody"></div>';
   document.getElementById('lessonBody').innerHTML=h;
   document.getElementById('home').style.display='none';
@@ -1540,13 +1612,12 @@ var PIECES=[
 var RP={pi:0,mi:0,inp:[],dur:1,acc:'key'};
 function openReal(){
   var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
-  h+='<div class="l-head"><div class="l-day">\uC2E4\uC804 \uCC44\uBCF4 \u00B7 PIECES</div>';
+  h+='<div class="l-head">';
   h+='<div class="l-t">\uAC00\uB77D \uCC44\uBCF4</div>';
-  h+='<div class="l-lead">\uD55C \uB9C8\uB514\uC529 \uB4E3\uACE0 \uBC1B\uC544\uC801\uC73C\uC138\uC694. \uAD6C\uAC04 \uBC18\uBCF5\u00B7\uB290\uB9AC\uAC8C \uC7AC\uC0DD\uC744 \uC4F0\uC138\uC694.</div></div>';
   for(var i=0;i<PIECES.length;i++){
     var P=PIECES[i];
     h+='<button class="stg'+(P.sanjo?' sanjo':'')+'" data-t="pc-'+P.id+'" onclick="openPiece('+i+')">'
-      +'<div class="num">'+(i+1)+'</div><div class="txt"><div class="t">'+P.t+'</div><div class="d">'+P.sub+' \u00B7 '+P.ms.length+'\uB9C8\uB514</div></div><div class="chk">\u203A</div></button>';
+      +'<div class="num">'+(i+1)+'</div><div class="txt"><div class="t">'+P.t+'</div></div><div class="chk">\u203A</div></button>';
   }
   h+='<button class="backbtn" data-t="rback" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
   document.getElementById('lessonBody').innerHTML=h;
@@ -1568,8 +1639,8 @@ function openPiece(pi){
   RP.pi=pi;RP.mi=0;RP.inp=[];RP.dur=1;RP.acc='key';
   var P=PIECES[pi];
   var h='<button class="back" data-t="back" onclick="openReal()">\u2190 \uAC00\uB77D \uBAA9\uB85D</button>';
-  h+='<div class="l-head"><div class="l-day'+(P.sanjo?' sanjo':'')+'">\uC2E4\uC804 \uCC44\uBCF4</div>';
-  h+='<div class="l-t">'+P.t+'</div><div class="l-lead">'+P.sub+' \u00B7 \u2669='+P.bpm+'</div></div>';
+  h+='<div class="l-head">';
+  h+='<div class="l-t">'+P.t+'</div></div>';
   h+='<div id="rpBody"></div>';
   document.getElementById('lessonBody').innerHTML=h;
   drawPiece();window.scrollTo(0,0);
@@ -1656,32 +1727,7 @@ function rpCheck(){
 }
 
 /* ══════ 채보법 (Method) ══════ */
-var METHOD=[
-{id:'m1',t:'\uCC44\uBCF4\uB294 \uB124 \uB2E8\uACC4\uB2E4',lead:'\uAE30\uBCF4\uB294 \uB9C8\uC9C0\uB9C9 \uB2E8\uACC4. \uC2E4\uD328\uB294 \uB300\uBD80\uBD84 \uADF8 \uC55E\uC5D0\uC11C \uB09C\uB2E4.',
- body:'<p>Karpinski\uAC00 \uC81C\uC2DC\uD55C \uCC44\uBCF4\uC758 4\uB2E8\uACC4\uAC00 \uC774 \uBD84\uC57C\uC758 \uD45C\uC900 \uBAA8\uD615\uC774\uC5D0\uC694.</p>'
- +'<table class="ctbl"><tr><th>\uB2E8\uACC4</th><th>\uD558\uB294 \uC77C</th></tr>'
- +'<tr><td><b>1 \uB4E3\uAE30</b></td><td>\uC18C\uB9AC\uB97C \uBC1B\uC544\uB4E4\uC774\uACE0 \uC8FC\uC758\uB97C \uB458 \uACF3\uC744 \uC815\uD568</td></tr>'
- +'<tr><td><b>2 \uAE30\uC5B5</b></td><td>\uD544\uC694\uD55C \uAC83\uB9CC \uACE8\uB77C \uAE30\uC5B5(\uCD94\uCD9C\uC801 \uCCAD\uCDE8) \u00B7 \uC791\uC740 \uB2E8\uC704\uB97C \uD070 \uB369\uC5B4\uB9AC\uB85C \uBB36\uC74C(\uCCAD\uD0B9)</td></tr>'
- +'<tr><td><b>3 \uC774\uD574</b></td><td>\uBC30\uC6B4 \uC774\uB860\uC744 \uC801\uC6A9 \u2014 \uC774 \uC74C\uC774 \uBA87\uBC88\uC9F8 \uC74C\uC778\uAC00, \uC5B4\uB5A4 \uBC15\uC5D0 \uC788\uB294\uAC00</td></tr>'
- +'<tr><td><b>4 \uAE30\uBCF4</b></td><td>\uC885\uC774\uC5D0 \uC61B\uAE40</td></tr></table>'
- +'<div class="cnote"><b>\uD575\uC2EC \u00B7 </b>\uAE30\uBCF4\uB294 <b>\uB9C8\uC9C0\uB9C9</b>\uC774\uC5D0\uC694. "\uC545\uBCF4\uB97C \uBABB \uC4F4\uB2E4"\uACE0 \uB290\uB07C\uB294 \uC0C1\uD669\uC758 \uC2E4\uC81C \uC6D0\uC778\uC740 \uB300\uAC1C <b>\uBABB \uC678\uC6B4\uB2E4(2\uB2E8\uACC4)</b>\uAC70\uB098 <b>\uBABB \uC54C\uC544\uB4E3\uB294\uB2E4(3\uB2E8\uACC4)</b>\uC608\uC694. \uC5F0\uD544 \uC7A1\uAE30 \uC804\uC5D0 \uADF8 \uB450 \uB2E8\uACC4\uB97C \uACF5\uB7B5\uD574\uC57C \uD574\uC694.</div>'
- +'<p>\uADF8\uB798\uC11C \uC774 \uC571\uC758 \uB4DC\uB9B4\uC740 \uAE30\uBCF4 \uC5F0\uC2B5\uC774 \uC544\uB2C8\uB77C <b>\uB4E3\uAE30\u00B7\uAE30\uC5B5\u00B7\uC774\uD574</b>\uB97C \uB2E8\uB828\uD558\uB294 \uCABD\uC5D0 \uCE58\uC6B0\uCCD0 \uC788\uC5B4\uC694. \uC885\uC774 \uC791\uC5C5\uC740 \uB9C8\uC9C0\uB9C9\uC5D0 \uD569\uB2C8\uB2E4.</p>'},
-
-{id:'m2',t:'\uC624\uC120\uBCF4\uB85C \uBC14\uB85C \uAC00\uC9C0 \uB9D0 \uAC83 \u2014 \uD504\uB85C\uD1A0\uAE30\uBCF4',lead:'\uC911\uAC04 \uAE30\uBCF4\uB97C \uAC70\uCCD0\uC57C \uC190\uC774 \uADC0\uB97C \uBC1C\uBAA9 \uC7A1\uC9C0 \uC54A\uB294\uB2E4.',
- body:'<p>\uB4E4\uC73C\uBA74\uC11C \uBC14\uB85C \uC624\uC120\uC5D0 \uADF8\uB9AC\uB824\uACE0 \uD558\uBA74 \uC74C\uC790\uB9AC\u00B7\uAE30\uB465\u00B7\uC784\uC2DC\uD45C\uB97C \uB3D9\uC2DC\uC5D0 \uACC4\uC0B0\uD558\uB2E4 \uC815\uC791 \uC120\uC728\uC744 \uB193\uCCD0\uC694. \uADF8\uB798\uC11C <b>\uD504\uB85C\uD1A0\uAE30\uBCF4</b>(protonotation)\uB97C \uC4F0\uC138\uC694 \u2014 Karpinski\uAC00 \uC81C\uC548\uD55C, \uC77C\uBD80\uB7EC \uBD88\uC644\uC804\uD558\uAC8C \uB9CC\uB4E0 \uC911\uAC04 \uAE30\uBCF4\uC608\uC694.</p>'
- +'<div id="protoDemo"></div>'
- +'<table class="ctbl"><tr><th>\uAE30\uD638</th><th>\uB73B</th></tr>'
- +'<tr><td>\uAE34 \uC138\uB85C\uC120</td><td>\uB9C8\uB514 \uCCAB \uBC15(\uAC15\uBC15)</td></tr>'
- +'<tr><td>\uC9E7\uC740 \uC138\uB85C\uC120</td><td>\uB098\uBA38\uC9C0 \uBC15</td></tr>'
- +'<tr><td>\uAC00\uB85C\uC120</td><td>\uC18C\uB9AC\uAC00 \uC9C0\uC18D\uB418\uB294 \uAE38\uC774</td></tr>'
- +'<tr><td>\uC22B\uC790\u00B7\uACC4\uC774\uB984</td><td>\uBA87\uBC88\uC9F8 \uC74C\uC778\uAC00 (\uC0B0\uC870\uB294 \uCCAD \uC774\uB984)</td></tr>'
- +'<tr><td>\uD654\uC0B4\uD45C</td><td>\uB3C4\uC57D\uC758 \uBC29\uD5A5 (\uC21C\uCC28\uB294 \uC548 \uC801\uC74C)</td></tr>'
- +'<tr><td>\uBE48\uCE78</td><td>\uC544\uC9C1 \uBAA8\uB974\uB294 \uACF3</td></tr>'
- +'<tr><td>X</td><td>\uD655\uC2E4\uD55C \uC27C\uD45C</td></tr></table>'
- +'<div class="cnote"><b>\uC77C\uBD80\uB7EC \uBE7C\uB294 \uAC83\u00B7 </b>\uD504\uB85C\uD1A0\uAE30\uBCF4\uC5D4 <b>\uC74C\uC790\uB9AC\uD45C\u00B7\uC870\uD45C\u00B7\uBC15\uC790\uD45C \uBD84\uBAA8\uAC00 \uC5C6\uC5B4\uC694</b>. \uC808\uB300\uC74C\uAC10 \uC5C6\uC774 \uB4E4\uB9AC\uB294 \uAC83\u2014\uBC15\u00B7\uB9AC\uB4EC\u00B7\uBA87\uBC88\uC9F8 \uC74C\u2014\uB9CC \uC801\uC5B4\uC694. \uB098\uBA38\uC9C0\uB294 \uB098\uC911\uC5D0 \uBD99\uC785\uB2C8\uB2E4.</div>'
- +'<p><b>\uC624\uC120\uBCF4\uB85C \uC62E\uAE38 \uB54C \uD544\uC694\uD55C \uAC74 \uC138 \uAC00\uC9C0</b>\uBFD0\uC774\uC5D0\uC694 \u2014 \u2460 \uC74C\uC790\uB9AC\uD45C, \u2461 \uC73C\uB738\uC74C(\uC0B0\uC870\uB294 \uBCF8\uCCAD)\uC774 \uC5B4\uB5A4 \uC74C\uC778\uAC00, \u2462 \uD55C \uBC15\uC774 \uC5B4\uB5A4 \uC74C\uD45C\uC778\uAC00. \uAE34 \uC138\uB85C\uC120\uC740 \uADF8\uB300\uB85C \uB9C8\uB514\uC120\uC774 \uB429\uB2C8\uB2E4.</p>'},
-
-{id:'m3',t:'\uB9AC\uB4EC\uC774 \uBA3C\uC800\uB2E4',lead:'\uC5F0\uAD6C\uAC00 \uC9DA\uB294 \uAC00\uC7A5 \uC57D\uD55C \uACE0\uB9AC. \uB9AC\uB4EC\uC774 \uD758\uB4E4\uB9AC\uBA74 \uC74C\uB192\uC774\uAE4C\uC9C0 \uBB34\uB108\uC9C4\uB2E4.',
+var METHOD=[{id:'m1',t:'\uB9AC\uB4EC\uC774 \uBA3C\uC800\uB2E4',lead:'\uC5F0\uAD6C\uAC00 \uC9DA\uB294 \uAC00\uC7A5 \uC57D\uD55C \uACE0\uB9AC. \uB9AC\uB4EC\uC774 \uD758\uB4E4\uB9AC\uBA74 \uC74C\uB192\uC774\uAE4C\uC9C0 \uBB34\uB108\uC9C4\uB2E4.',
  body:'<p>\uCC44\uBCF4 \uAD50\uC721 \uC5F0\uAD6C\uC5D0\uC11C \uBC18\uBCF5\uD574 \uB098\uC624\uB294 \uAD00\uCC30\uC774 \uC788\uC5B4\uC694 \u2014 \uD559\uC0DD\uB4E4\uC740 <b>\uC74C\uD45C\uB97C \uBC15\uC5D0 \uB9DE\uCDB0 \uBC30\uCE58\uD558\uB294 \uAC83</b>\uC744 \uC81C\uC77C \uC5B4\uB824\uC6CC\uD558\uACE0, \uAC70\uAE30\uC11C \uB2F9\uD669\uD558\uBA74 <b>\uC74C\uB192\uC774\uAE4C\uC9C0 \uD2C0\uB824\uBC84\uB824\uC694</b>. \uADF8\uB798\uC11C \uB9AC\uB4EC\uC744 \uBA3C\uC800 \uACE0\uC815\uD574\uC57C \uD574\uC694.</p>'
  +'<p><b>\uC810 \uACA9\uC790</b>\uB85C \uC2DC\uC791\uD558\uC138\uC694. \uBC15\uB9CC\uD07C \uC810\uC744 \uCC0D\uACE0 \uB9C8\uB514\uB97C \uB098\uB215\uB2C8\uB2E4. \uADF8 \uC704\uC5D0:</p>'
  +'<table class="ctbl"><tr><th>\uAE30\uD638</th><th>\uB73B</th></tr>'
@@ -1692,48 +1738,19 @@ var METHOD=[
  +'<p><b>\uBC18\uB4DC\uC2DC \uC190\uC73C\uB85C \uBC15\uC744 \uCE58\uAC70\uB098 \uC9C0\uD718\uD558\uBA74\uC11C</b> \uBC1B\uC544\uC801\uC73C\uC138\uC694. \uBC15\uC744 \uBAB8\uC73C\uB85C \uC7A1\uACE0 \uC788\uC5B4\uC57C \uC5B4\uB290 \uC74C\uC774 \uBC15 \uC704\uC5D0 \uC624\uACE0 \uC5B4\uB290 \uAC83\uC774 \uBC97\uC5B4\uB098\uB294\uC9C0 \uAD6C\uBCC4\uB3FC\uC694.</p>'
  +'<div class="cnote a"><b>\uAD6D\uC545\uC740 \uD2B9\uD788\u00B7 </b>\uC5F0\uAD6C\uB4E4\uC774 \uACF5\uD1B5\uC73C\uB85C \uC9DA\uB294 \uAC8C <b>\uBCF5\uD569\uBC15\uC790(3\uBD84\uBC15)\uC758 \uC5B4\uB824\uC6C0</b>\uC774\uC5D0\uC694. \uAD6D\uC545\uC740 \uB300\uBD80\uBD84 3\uBD84\uBC15\uC774\uB2C8, \uB4E3\uC790\uB9C8\uC790 <b>\uD55C \uBC15\uC774 \uB458\uB85C \uB098\uB258\uB294\uC9C0 \uC14B\uC73C\uB85C \uB098\uB258\uB294\uC9C0</b>\uBD80\uD130 \uD310\uB2E8\uD558\uB294 \uC2B5\uAD00\uC744 \uB4E4\uC5EC\uC57C \uD574\uC694.</div>'},
 
-{id:'m4',t:'\uB4E3\uAE30 \uBA3C\uC800\uB0D0, \uC4F0\uAE30 \uBA3C\uC800\uB0D0',lead:'\uC815\uB2F5\uC774 \uAC08\ub9b0 \ubb38\uc81c. \uC591\ucabd \uADFC\uAC70\uB97C \uC54C\uACE0 \uACE0\uB974\uB294 \uAC8C \uB9DE\uB2E4.',
- body:'<p>\uC774\uAC74 \uC5F0\uAD6C\uC790\uB4E4 \uC0AC\uC774\uC5D0\uC11C \uACB0\uB860\uC774 \uAC08\uB9AC\uB294 \uB300\uBAA9\uC774\uC5D0\uC694.</p>'
- +'<table class="ctbl"><tr><th>\uC785\uC7A5</th><th>\uADFC\uAC70</th><th>\uC57D\uC810</th></tr>'
- +'<tr><td><b>\uBC14\uB85C \uC4F4\uB2E4</b></td><td>\uC2E4\uD5D8\uC5D0\uC11C \uC989\uC2DC \uC4F0\uAE30 \uC2DC\uC791\uD55C \uCABD\uC758 \uC131\uC801\uC774 \uB354 \uC88B\uC558\uC74C</td><td>\uB4E3\uB294 \uB3D9\uC2DC\uC5D0 \uC4F0\uB2C8 <b>\uC774\uC911 \uCC98\uB9AC</b> \u2014 \uC0C8 \uC18C\uB9AC\uB97C \uB193\uCE68</td></tr>'
- +'<tr><td><b>\uB2E4 \uB4E3\uACE0 \uC4F4\uB2E4</b></td><td>\uB300\uD559 \uC774\uB860 \uAC15\uC0AC \uB2E4\uC218\uAC00 \uAD8C\uC7A5. \uC190\uC774 \uC544\uB2C8\uB77C \uADC0\uC640 \uAE30\uC5B5\uC744 \uD6C8\uB828\uD568</td><td>\uC120\uC728\uC774 \uAE38\uBA74 <b>\uAE30\uC5B5 \uC6A9\uB7C9</b>\uC744 \uB118\uC5B4\uC12C</td></tr></table>'
- +'<div class="cnote"><b>\uC808\uCDA9\uC548\u00B7 </b><b>\uCCAB \uCCAD\uCDE8\uB294 \uC5F0\uD544\uC744 \uB193\uACE0</b> \uC7A5\uB2E8\u00B7\uC870\uC131\u00B7\uAD6C\uC870\uB9CC \uBD05\uB2C8\uB2E4. <b>\uB450 \uBC88\uC9F8\uBD80\uD130</b> \uD504\uB85C\uD1A0\uAE30\uBCF4\uB85C \uBC15 \uACA9\uC790\uC640 \uC2DC\uC791\uC810\uC744 \uCC0D\uC5B4\uC694. \uC624\uC120\uBCF4 \uC804\uD658\uC740 \uC7AC\uC0DD\uC744 \uBA48\uCD98 \uB4A4\uC5D0 \uD569\uB2C8\uB2E4.</div>'
- +'<p>\uC911\uC694\uD55C \uAC74 <b>\uC5B4\uB290 \uCABD\uC774\uB4E0 \uD55C \uBC88\uC5D0 \uB2E4 \uC4F0\uB824 \uD558\uC9C0 \uC54A\uB294 \uAC83</b>\uC774\uC5D0\uC694. \uCCAD\uCDE8\uB9C8\uB2E4 <b>\uBAA9\uD45C\uB97C \uD558\uB098\uB9CC</b> \uC7A1\uC73C\uC138\uC694 \u2014 \uC774\uBC88\uC5D4 \uC7A5\uB2E8, \uB2E4\uC74C\uC5D4 \uBCF8\uCCAD, \uADF8\uB2E4\uC74C\uC5D4 \uB9AC\uB4EC \uACE8\uACA9.</p>'},
-
-{id:'m5',t:'\uAE30\uC5B5\uC744 \uB298\uB9AC\uB294 \uBC95',lead:'\uC74C \uD558\uB098\uC529 \uC678\uC6B0\uBA74 \uB124\uB2E4\uC12F \uAC1C\uC5D0\uC11C \uB9C9\uD78C\uB2E4.',
- body:'<p>\uCC44\uBCF4\uC758 \uBCD1\uBAA9\uC740 \uB2E8\uAE30\uAE30\uC5B5\uC774\uC5D0\uC694. \uD574\uACB0\uCC45\uC740 <b>\uCCAD\uD0B9</b>(chunking) \u2014 \uC791\uC740 \uB2E8\uC704\uB97C \uD070 \uB369\uC5B4\uB9AC\uB85C \uBB36\uC5B4 \uD55C \uAC1C\uCC98\uB7FC \uAE30\uC5B5\uD558\uB294 \uAC70\uC608\uC694.</p>'
- +'<table class="ctbl"><tr><th>\uBC29\uBC95</th><th>\uB0B4\uC6A9</th></tr>'
- +'<tr><td><b>\uC591\uB05D \uBA3C\uC800</b></td><td>\uCCAB \uC74C\uACFC \uB05D \uC74C\uC744 \uBA3C\uC800 \uACE0\uC815. \uAC00\uC6B4\uB370\uAC00 \uD6E8\uC52C \uC26C\uC6CC\uC838\uC694</td></tr>'
- +'<tr><td><b>\uD070 \uADF8\uB9BC\uBD80\uD130</b></td><td>\uC624\uB974\uB294\uAC00 \uB0B4\uB9AC\uB294\uAC00, \uB2E8\uC704\uAC00 \uBA87 \uAC1C\uC778\uAC00\uBD80\uD130</td></tr>'
- +'<tr><td><b>\uAE30\uB2A5\uC73C\uB85C \uB4E3\uAE30</b></td><td>"\uC774 \uC74C\uC740 \uBB50\uB2E4"\uAC00 \uC544\uB2C8\uB77C "\uC73C\uB738\uC74C \uAE30\uC900 \uBA87\uBC88\uC9F8\uB2E4"</td></tr>'
- +'<tr><td><b>\uC775\uC219\uD55C \uAC00\uB77D\uACFC \uC5F0\uACB0</b></td><td>\uC544\uB294 \uC120\uC728\uC758 \uC870\uAC01\uACFC \uAC19\uB2E4\uACE0 \uBB36\uC73C\uBA74 \uD55C \uB369\uC5B4\uB9AC\uAC00 \uB428</td></tr>'
- +'<tr><td><b>\uC7A5\uB2E8 \uB2E8\uC704\uB85C</b></td><td>\uAD6D\uC545\uC740 \uD55C \uC7A5\uB2E8\uC774 \uC790\uC5F0\uC2A4\uB7EC\uC6B4 \uB369\uC5B4\uB9AC\uC608\uC694</td></tr></table>'
- +'<div class="cnote"><b>\uC21C\uC11C\u00B7 </b>\uC724\uACFD(\uC624\uB974\uB098 \uB0B4\uB9AC\uB098) \u2192 \uB3C4\uC218(\uC5BC\uB9C8\uB098) \u2192 \uC74C\uC774\uB984. \uCC98\uC74C\uBD80\uD130 \uC815\ud655\ud55c \uC74C\uC744 \uC7A1\uC73C\uB824 \ud558\uBA74 \uB2E4 \ub193\uCCD0\uC694.</div>'
- +'<p>\uADF8\uB9AC\uACE0 <b>\uB530\uB77C \uBD80\uB97C \uC218 \uC788\uB294 \uAC83\uB9CC \uC801\uC744 \uC218 \uC788\uC5B4\uC694</b>. \uAE30\uC5B5\uC774 \uC548 \uB098\uBA74 \uBA3C\uC800 \uC18C\uB9AC\uB0B4\uC5B4 \uBD80\uB974\uB294 \uAC8C \uBE60\uB985\uB2C8\uB2E4.</p>'},
-
-{id:'m6',t:'\uC2E4\uC81C \uC74C\uC6D0\uC73C\uB85C \uCC44\uBCF4\uD558\uAE30',lead:'\uC885\uC774\u00B7\uC5F0\uD544\u00B7\uC7AC\uC0DD\uAE30\uB85C \uD558\uB294 \uC77C\uC758 \uC21C\uC11C.',
+{id:'m2',t:'\uC2E4\uC81C \uC74C\uC6D0\uC73C\uB85C \uCC44\uBCF4\uD558\uAE30',lead:'\uC885\uC774\u00B7\uC5F0\uD544\u00B7\uC7AC\uC0DD\uAE30\uB85C \uD558\uB294 \uC77C\uC758 \uC21C\uC11C.',
  body:'<p>\uC900\uBE44\uBD80\uD130. \uC7AC\uC0DD \uB3C4\uAD6C\uB294 <b>\uC74C\uC815\uC744 \uC720\uC9C0\uD55C \uCC44 \uB290\uB9AC\uAC8C</b>(50~70%) \uD560 \uC218 \uC788\uACE0 <b>\uAD6C\uAC04 \uBC18\uBCF5</b>\uC774 \uB418\uB294 \uAC78 \uACE0\uB974\uC138\uC694.</p>'
- +'<table class="ctbl"><tr><th></th><th>\uD560 \uC77C</th></tr>'+'<tr><td>1</td><td>\uC5F0\uD544 \uB193\uACE0 \uC804\uCCB4\uB97C \uB450\uC138 \uBC88 \uB4E3\uB294\uB2E4</td></tr>'+'<tr><td>2</td><td>\uAD6C\uC870\uB97C \uB098\uB214\uB2E4 \u2014 \uAD6D\uC545\uC740 \uC7A5\uB2E8 \uB2E8\uC704\uB85C</td></tr>'+'<tr><td>3</td><td>\uBC15\uC744 \uC9DA\uACE0 2\uBD84\uBC15\uC778\uC9C0 3\uBD84\uBC15\uC778\uC9C0 \uC815\uD55C\uB2E4</td></tr>'+'<tr><td>4</td><td>\uBC15\uC790\uD45C\uB97C \uC815\uD55C\uB2E4 (\uAD6D\uC545\uC740 \uC7A5\uB2E8\uACFC \uD15C\uD3EC\uB97C \uD568\uAED8)</td></tr>'+'<tr><td>5</td><td>\uD55C \uAD6C\uAC04\uC744 \uB290\uB9AC\uAC8C \uBC18\uBCF5\uD558\uBA70 \uC74C\uAC00 \uC5C6\uB294 \uAFB8\uBC08\uC744 \uAC78\uB7EC\uB0B8\uB2E4</td></tr>'+'<tr><td>6</td><td>\uD504\uB85C\uD1A0\uAE30\uBCF4\uB85C \uBC15 \uACA9\uC790\uC640 \uC2DC\uC791\uC810\uC744 \uC801\uB294\uB2E4</td></tr>'+'<tr><td>7</td><td>\uC73C\uB738\uC74C(\uBCF8\uCCAD)\uC744 \uCC3E\uB294\uB2E4</td></tr>'+'<tr><td>8</td><td>\uC2DC\uC791\uC810 \uC704\uC5D0 \uACC4\uC774\uB984·\uCCAD \uC774\uB984\uC744 \uC5B9\uB294\uB2E4</td></tr>'+'<tr><td>9</td><td>\uC624\uC120\uBCF4\uB85C \uC804\uD658\uD558\uACE0 \uAE30\uD638\uB97C \uC5B9\uB294\uB2E4</td></tr>'+'<tr><td>10</td><td>\uC6D0\uC74C\uACFC \uB098\uB780\uD788 \uB4E4\uC73C\uBA70 \uAC80\uC0B0\uD55C\uB2E4</td></tr></table>'+'<div class="cnote"><b>\uACE1 \uACE0\uB974\uAE30\u00B7 </b>\uC9C0\uAE08 \uC2E4\uB825\ubcf4\ub2e4 <b>\uC0B4\uC9DD \uC5B4\uB824\uC6B4</b> \uAC78 \uACE0\uB974\uC138\uC694. \uC545\uAE30 \uD558\uB098\uAC00 \uB69C\uB837\uC774 \uB4E4\uB9AC\uB294 \uB179\uC74C\uC774 \uC88B\uACE0, \uD569\uC8FC\uB294 \uB4A4\uB85C \uBBF8\uB8E8\uC138\uC694.</div>'},
-
-{id:'m7',t:'\uC0B0\uC870 \uCC44\uBCF4\uC758 \uD2B9\uC218 \uBB38\uC81C',lead:'\uC624\uC120\uBCF4\uB294 \uC6D0\uB798 \uAD6C\uC804\uC74C\uC545\uC744 \uC801\uAE30 \uC704\ud574 \ub9cc\ub4e4\uc5b4\uc9c4 \uAC8C \uC544\ub2c8\ub2e4.',
- body:'<p>Seeger\uAC00 \uAD6C\uBD84\uD55C \uB450 \uC885\uB958\uC758 \uAE30\uBCF4\uAC00 \uC788\uC5B4\uC694.</p>'
- +'<table class="ctbl"><tr><th>\uC885\uB958</th><th>\uC131\uACA9</th></tr>'
- +'<tr><td><b>\uADDC\uBC94\uC801</b></td><td>\uC774\uB807\uAC8C \uC5F0\uC8FC\ud558\ub77c\ub294 <b>\uC124\uACC4\uB3C4</b></td></tr>'
- +'<tr><td><b>\uC11C\uC220\uC801</b></td><td>\uC774\ubc88 \uc5f0\uc8fc\uac00 \uc2e4\uc81c \uc774\ub807\uac8c \ub4e4\ub838\ub2e4\ub294 <b>\uBCF4\uACE0\uC11C</b></td></tr></table>'
- +'<p>\uC624\uC120\uBCF4\uB294 \uC11C\uC591\uC74C\uC545\uC758 <b>\uADDC\uBC94\uC801</b> \uB3C4\uAD6C\uC608\uC694. \uADF8\uAC78\uB85C \uAD6C\uC804 \uC74C\uC545\uC744 <b>\uC11C\uC220</b>\uD558\uB824\uB2C8 \uC5B4\uAE0B\ub0a9\ub2c8\ub2e4. \uC2DC\uAE40\uC0C8\uC758 \uC2E4\uC81C \uACB0, \uBC00\uACE0 \uB2F9\uAE30\uB294 \uC7A5\uB2E8\uC740 \uADF8\ub300\ub85c \uc548 \ub2f4\uaca8\uc694.</p>'
- +'<div class="cnote a"><b>\uADF8\ub798\uc11c \uc120\ud0dd\uc774 \ud544\uc694\ud574\uc694\u00B7 </b>\uB4E4\ub9ac\ub294 \uac74 \ub2e4 \uc801\ub294 \ubc29\uc2dd\uacfc, \uadf8 \uc74c\uc545\uc5d0\uc11c <b>\uc758\ubbf8 \uc788\ub294 \uad6c\ubd84\ub9cc</b> \uc801\ub294 \ubc29\uc2dd\uc774 \uc788\uc5b4\uc694. \uc815\ub2f5\uc740 <b>\ubaa9\uc801\uc774 \uc815\ud574\uc694</b> \u2014 \uc5f0\uc8fc \uc7ac\ud604\uc774\ub0d0, \uad6c\uc870 \ud30c\uc545\uc774\ub0d0.</div>'
- +'<p><b>\uC774 \uC571\uC758 \uC120\ud0dd</b>\uC740 \uD6C4\uC790\uC608\uC694 \u2014 \uBCF8\uCCAD\uC744 C\ub85c \uACE0\uC815\ud558\uace0(\uC2E4\uC74C \uc544\ub2cc \uAC04\uACA9 \uAE30\uC900), \uBBF8\ubd84\uc74c\uc740 \ub530\uc9c0\uc9c0 \uc54a\uace0, \uc2dc\uae40\uc0c8\ub294 \uc74c\uc744 \ub354\ud558\ub294 \uac8c \uc544\ub2c8\ub77c <b>\uc2e4\uc74c \uc0ac\uc774\uc758 \uc774\ub3d9 \ubc29\uc2dd</b>\uC73C\ub85c \uc801\uc5b4\uc694. \uBAA9\uC801\uC774 \uC5F0\uC8FC \uC7AC\ud604\uc774 \uc544\ub2c8\ub77c <b>\uAD6C\uC870\ub97c \ubcf4\uace0 \ubc30\uc6b0\ub294 \uac83</b>\uc774\uae30 \ub54c\ubb38\uc785\ub2c8\ub2e4.</p>'
- +'<div class="cnote"><b>\uC815\ub2f5\uc774 \ud558\ub098\uac00 \uc544\ub2c8\ub2e4\u00B7 </b>\uAD6D\uC545\uC740 \uB3C4\uC81C\uAD50\uC721\uC73C\ub85c \uc804\uc2b9\ub3fc\uc11c \uac19\uc740 \uac00\ub77d\ub3c4 <b>\uCC44\uBCF4\uC790\uc5d0 \ub530\ub77c \uc545\ubcf4\uac00 \ub2ec\ub77c\uc838\uc694</b>. 20\uc138\uae30 \ucd08 \uc624\uc120\ubcf4 \ucc44\ubcf4\uac00 \uc2dc\uc791\ub420 \ub54c\ub3c4 \ud669\uc885\uc758 \uc74c\uace0\u00b7\ube60\ub974\uae30\u00b7\ubc15\uc790 \ud45c\uae30\ub97c \ub450\uace0 \uc2dc\ud589\ucc29\uc624\ub97c \uac70\ucce4\uc5b4\uc694. \ub0b4 \ucc44\ubcf4\uac00 \ub0a8\uacfc \ub2e4\ub974\ub2e4\uace0 \ud2c0\ub9b0 \uac8c \uc544\ub2c8\uc5d0\uc694 \u2014 \uadfc\uac70\ub97c \ub300\uc57c \ud569\ub2c8\ub2e4.</div>'}
+ +'<table class="ctbl"><tr><th></th><th>\uD560 \uC77C</th></tr>'+'<tr><td>1</td><td>\uC5F0\uD544 \uB193\uACE0 \uC804\uCCB4\uB97C \uB450\uC138 \uBC88 \uB4E3\uB294\uB2E4</td></tr>'+'<tr><td>2</td><td>\uAD6C\uC870\uB97C \uB098\uB214\uB2E4 \u2014 \uAD6D\uC545\uC740 \uC7A5\uB2E8 \uB2E8\uC704\uB85C</td></tr>'+'<tr><td>3</td><td>\uBC15\uC744 \uC9DA\uACE0 2\uBD84\uBC15\uC778\uC9C0 3\uBD84\uBC15\uC778\uC9C0 \uC815\uD55C\uB2E4</td></tr>'+'<tr><td>4</td><td>\uBC15\uC790\uD45C\uB97C \uC815\uD55C\uB2E4 (\uAD6D\uC545\uC740 \uC7A5\uB2E8\uACFC \uD15C\uD3EC\uB97C \uD568\uAED8)</td></tr>'+'<tr><td>5</td><td>\uD55C \uAD6C\uAC04\uC744 \uB290\uB9AC\uAC8C \uBC18\uBCF5\uD558\uBA70 \uC74C\uAC00 \uC5C6\uB294 \uAFB8\uBC08\uC744 \uAC78\uB7EC\uB0B8\uB2E4</td></tr>'+'<tr><td>6</td><td>\uD504\uB85C\uD1A0\uAE30\uBCF4\uB85C \uBC15 \uACA9\uC790\uC640 \uC2DC\uC791\uC810\uC744 \uC801\uB294\uB2E4</td></tr>'+'<tr><td>7</td><td>\uC73C\uB738\uC74C(\uBCF8\uCCAD)\uC744 \uCC3E\uB294\uB2E4</td></tr>'+'<tr><td>8</td><td>\uC2DC\uC791\uC810 \uC704\uC5D0 \uACC4\uC774\uB984·\uCCAD \uC774\uB984\uC744 \uC5B9\uB294\uB2E4</td></tr>'+'<tr><td>9</td><td>\uC624\uC120\uBCF4\uB85C \uC804\uD658\uD558\uACE0 \uAE30\uD638\uB97C \uC5B9\uB294\uB2E4</td></tr>'+'<tr><td>10</td><td>\uC6D0\uC74C\uACFC \uB098\uB780\uD788 \uB4E4\uC73C\uBA70 \uAC80\uC0B0\uD55C\uB2E4</td></tr></table>'+'<div class="cnote"><b>\uACE1 \uACE0\uB974\uAE30\u00B7 </b>\uC9C0\uAE08 \uC2E4\uB825\ubcf4\ub2e4 <b>\uC0B4\uC9DD \uC5B4\uB824\uC6B4</b> \uAC78 \uACE0\uB974\uC138\uC694. \uC545\uAE30 \uD558\uB098\uAC00 \uB69C\uB837\uC774 \uB4E4\uB9AC\uB294 \uB179\uC74C\uC774 \uC88B\uACE0, \uD569\uC8FC\uB294 \uB4A4\uB85C \uBBF8\uB8E8\uC138\uC694.</div>'}
 ];
 function openMethod(){
   var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
-  h+='<div class="l-head"><div class="l-day">\uCC44\uBCF4\uBC95 \u00B7 METHOD</div>';
+  h+='<div class="l-head">';
   h+='<div class="l-t">\uC5B4\uB5BB\uAC8C \uCC44\uBCF4\ud560 \uac83\uc778\uac00</div>';
-  h+='<div class="l-lead">\uC885\uC774\uC640 \uC5F0\uD544\ub85c \uc2e4\uc81c \ucc44\ubcf4\ub97c \ud560 \ub54c\uc758 \uc808\ucc28\uc640 \uadfc\uac70. \uad50\uc721\uc5f0\uad6c\u00b7\ubbfc\uc871\uc74c\uc545\ud559 \ub17c\uc758\ub97c \ubc18\uc601\ud588\uc5b4\uc694.</div></div>';
+  h+='<div class="l-lead">오선지와 연필</div></div>';
   for(var i=0;i<METHOD.length;i++){
     var M=METHOD[i];
     h+='<button class="stg" data-t="mt-'+M.id+'" onclick="openMethodPage('+i+')">'
-      +'<div class="num">'+(i+1)+'</div><div class="txt"><div class="t">'+M.t+'</div><div class="d">'+M.lead+'</div></div><div class="chk">\u203A</div></button>';
+      +'<div class="num">'+(i+1)+'</div><div class="txt"><div class="t">'+M.t+'</div></div><div class="chk">\u203A</div></button>';
   }
   h+='<button class="backbtn" data-t="mback" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
   document.getElementById('lessonBody').innerHTML=h;
@@ -1744,8 +1761,8 @@ function openMethod(){
 function openMethodPage(i){
   var M=METHOD[i];
   var h='<button class="back" data-t="back" onclick="openMethod()">\u2190 \uCC44\uBCF4\uBC95 \uBAA9\uB85D</button>';
-  h+='<div class="l-head"><div class="l-day">\uCC44\uBCF4\uBC95 '+(i+1)+' / '+METHOD.length+'</div>';
-  h+='<div class="l-t">'+M.t+'</div><div class="l-lead">'+M.lead+'</div></div>';
+  h+='<div class="l-head">';
+  h+='<div class="l-t">'+M.t+'</div></div>';
   h+='<div class="sec">'+M.body+'</div>';
   if(i+1<METHOD.length)h+='<button class="nextbtn" data-t="mnext" onclick="openMethodPage('+(i+1)+')">\uB2E4\uC74C \u2014 '+METHOD[i+1].t+' \u2192</button>';
   h+='<button class="backbtn" data-t="mpback" onclick="openMethod()">\u2190 \uCC44\uBCF4\uBC95 \uBAA9\uB85D\uC73C\uB85C</button>';
@@ -1761,7 +1778,7 @@ function protoSVG(g,opt){
   opt=opt||{};
   var beats=opt.beats||4,sub=opt.sub||2,n=beats*sub;
   var CW=34,X0=16,Y=42,W=X0*2+n*CW,H=opt.label?82:64;
-  var s='<svg viewBox="0 0 '+W+' '+H+'" width="'+Math.min(W,540)+'">';
+  var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;max-width:'+Math.round(W*staffScale())+'px;height:auto">';
   for(var b=0;b<=beats;b++){
     var x=X0+b*sub*CW;
     var tall=(b===0||b===beats)?22:(beats===4&&b===2?15:10);
@@ -1808,6 +1825,16 @@ var PR_SCALE_W=['C4','D4','E4','F4','G4','A4','B4'];
 var PR_SCALE_S=['C4','D4','Eb4','F4','G4','A4','Bb4'];
 function prCellCount(){return PR.beats*PR.sub;}
 function prGen(){
+  var n=prCellCount();
+  for(var attempt=0;attempt<40;attempt++){
+    var g=prGen1();
+    var c=0;
+    for(var i=0;i<n;i++)if(g.cells[i]==='on')c++;
+    if(c>=3)return g;
+  }
+  return prGen1();
+}
+function prGen1(){
   var n=prCellCount(),cells=new Array(n),deg={},prev=0;
   cells[0]='on';deg[0]=String(1+rnd(2));
   for(var i=1;i<n;i++){
@@ -1849,9 +1876,8 @@ function prSeq(){
 function openProto(){
   PR.ans=null;
   var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
-  h+='<div class="l-head"><div class="l-day">\uD504\uB85C\uD1A0\uAE30\uBCF4 \u00B7 PROTONOTATION</div>';
+  h+='<div class="l-head">';
   h+='<div class="l-t">\uC911\uAC04 \uAE30\uBCF4 \uC5F0\uC2B5</div>';
-  h+='<div class="l-lead">\uC885\uC774\uC5D0 \uD558\ub294 \ubc29\uc2dd \uadf8\ub300\ub85c. \ub9ac\ub4ec(\uc2dc\uc791\uc810)\uc744 \uba3c\uc800 \ucc0d\uace0, \uadf8 \ub2e4\uc74c \ubaa8\uc74c\uc744 \uc62c\ub824\uc694.</div></div>';
   h+='<div id="prBody"></div>';
   document.getElementById('lessonBody').innerHTML=h;
   document.getElementById('home').style.display='none';
@@ -1977,9 +2003,8 @@ function fmtT(s){
 }
 function openAudio(){
   var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
-  h+='<div class="l-head"><div class="l-day">\uAD6C\uAC04 \uBC18\uBCF5 \u00B7 LOOPER</div>';
+  h+='<div class="l-head">';
   h+='<div class="l-t">\uC74C\uC6D0 \uB4E3\uACE0 \uCC44\uBCF4\ud558\uae30</div>';
-  h+='<div class="l-lead">\uD30C\uC77C\uC744 \uBD88\uB7EC \ud55c \uc7a5\ub2e8\uc529 \uad6c\uac04\uc744 \uc7a1\uace0 \ubc18\ubcf5\uc2dc\ud0a4\uc138\uc694. \uc74c\uc815\uc744 \uc720\uc9c0\ud55c \ucc44 \ub290\ub9ac\uac8c \ub4e4\uc744 \uc218 \uc788\uc5b4\uc694. \ud30c\uc77c\uc740 \uae30\uae30 \ubc16\uc73c\ub85c \ub098\uac00\uc9c0 \uc54a\uc544\uc694.</div></div>';
   h+='<div id="apBody"></div>';
   document.getElementById('lessonBody').innerHTML=h;
   document.getElementById('home').style.display='none';
@@ -2362,7 +2387,7 @@ function renderHome(){
     if(c.tr==='w'){if(dn)w++;}else{if(dn)s++;}
     var row='<button class="stg'+(dn?' done':'')+(c.tr==='s'?' sanjo':'')+'" data-t="stg-'+c.id+'" onclick="openLesson('+i+')">'
       +'<div class="num">'+(c.tr==='s'?'S':'')+c.n+'</div>'
-      +'<div class="txt"><div class="t">'+c.t+'</div><div class="d">'+c.lead+'</div></div>'
+      +'<div class="txt"><div class="t">'+c.t+'</div></div>'
       +'<div class="chk">'+(dn?'\u2713':'\u203A')+'</div></button>';
     if(c.tr==='w')hw+=row;else hs+=row;
   }
@@ -2379,8 +2404,8 @@ function openLesson(i){
   var c=CUR[i],dn=!!ST.done[c.id];
   DR.ok=0;DR.tot=0;
   var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
-  h+='<div class="l-head"><div class="l-day'+(c.tr==='s'?' sanjo':'')+'">'+(c.tr==='s'?'\uC0B0\uC870 \uD2B8\uB799 S':'\uC11C\uC591 \uB098\uC120 ')+c.n+'</div>';
-  h+='<div class="l-t">'+c.t+'</div><div class="l-lead">'+c.lead+'</div></div>';
+  h+='<div class="l-head">';
+  h+='<div class="l-t">'+c.t+'</div></div>';
   h+='<div class="sec"><div class="sec-h"><div class="n'+(c.tr==='s'?' a':'')+'">1</div>\uAC1C\uB150</div>'+c.concept+'</div>';
   if(c.ex&&c.ex.length){
     h+='<div class="sec"><div class="sec-h"><div class="n'+(c.tr==='s'?' a':'')+'">2</div>\uADC0\uB85C \uD655\uC778</div><div class="cex"><div class="cex-t">\uD83C\uDFA7 \uB4E4\uC5B4\uBCF4\uAE30</div><div class="cex-btns">';
@@ -2471,8 +2496,8 @@ var REFTABS=[['yul','\uC728\uBA85'],['jang','\uC7A5\uB2E8'],['meter','\uBC15\uC7
 var YULMODE='jeongak';
 function openRef(k){
   var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
-  h+='<div class="l-head"><div class="l-day">\uCC38\uACE0 \uC0AC\uC804 \u00B7 REFERENCE</div><div class="l-t">\uC728\uBA85 \u00B7 \uC7A5\uB2E8 \u00B7 \uC74C\uC815 \u00B7 \uAE30\uD638</div>';
-  h+='<div class="l-lead">\uACF5\uBD80 \uC911 \uC5B8\uC81C\uB4E0 \uCC3E\uC544\uBCF4\uB294 \uC0C1\uC124 \uCC38\uACE0.</div></div>';
+  h+='<div class="l-head"><div class="l-t">\uC728\uBA85 \u00B7 \uC7A5\uB2E8 \u00B7 \uC74C\uC815 \u00B7 \uAE30\uD638</div>';
+  h+='</div>';
   h+='<div class="ref-nav">';
   for(var i=0;i<REFTABS.length;i++)h+='<button data-t="ref-'+REFTABS[i][0]+'" class="'+(REFTABS[i][0]===k?'on':'')+'" onclick="refSwitch(\''+REFTABS[i][0]+'\')">'+REFTABS[i][1]+'</button>';
   h+='</div><div id="refBody"></div>';
