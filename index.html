@@ -364,7 +364,7 @@ function drawStaff(host,items,opt){
     host.__stf={top:stave.getYForLine(0),bot:stave.getYForLine(4),H:H,W:W,key:key,
                 nat:opt.nat||null,svg:host.querySelector('svg')};
     if(!items.length)return;
-    var tick=[],segs=[[]],acc=0,total=0;
+    var tick=[],segs=[[]],acc=0,total=0,noteRefs=[];
     var kmap=keyAccMap(key),mstate={};
     for(var i=0;i<items.length;i++){
       var it=items[i],sp=durSpec(it.d);
@@ -385,7 +385,7 @@ function drawStaff(host,items,opt){
       }
       if(sp[1]){try{note.addModifier(new VF.Dot(),0);}catch(e){try{VF.Dot.buildAndAttach([note]);}catch(e2){}}}
       if(it.cls){
-        var col=it.cls==='ok'?'#1f9e7a':'#d9503c';
+        var col=it.cls==='ok'?'#1f9e7a':(it.cls==='sel'?'#1565c0':'#d9503c');
         note.setStyle({fillStyle:col,strokeStyle:col});
       }
       if(it.n&&opt.labels){
@@ -406,6 +406,7 @@ function drawStaff(host,items,opt){
         }catch(e4){}
       }
       tick.push(note);segs[segs.length-1].push(note);
+      noteRefs.push({i:i,note:note});
       acc+=it.d;total+=it.d;
     }
     var voice=new VF.Voice({num_beats:Math.max(1,Math.round(total*4)),beat_value:4});
@@ -424,6 +425,11 @@ function drawStaff(host,items,opt){
     new VF.Formatter().joinVoices([voice]).format([voice],W-14-startX-26);
     voice.draw(c,stave);
     for(var b3=0;b3<beams.length;b3++)beams[b3].setContext(c).draw();
+    var nxArr=[];
+    for(var r2=0;r2<noteRefs.length;r2++){
+      try{nxArr.push({i:noteRefs[r2].i,x:noteRefs[r2].note.getAbsoluteX()});}catch(e7){}
+    }
+    host.__stf.noteX=nxArr;
   }catch(err){
     host.innerHTML='<div class="stf-fail">\uC545\uBCF4 \uB80C\uB354 \uC624\uB958</div>';
     window.__vfLastErr=String(err&&err.stack||err);
@@ -451,6 +457,31 @@ function pitchAtY(host,clientY,accMode){
   else if(accMode==='#')n.acc=1;
   else if(accMode==='b')n.acc=-1;
   return n;
+}
+/* 탭 x좌표 → 가장 가까운 음표 인덱스 (없으면 -1) */
+function noteAtX(host,clientX){
+  var inf=stfInfo(host);
+  if(!inf||!inf.svg||!inf.noteX||!inf.noteX.length)return -1;
+  var r=inf.svg.getBoundingClientRect();
+  if(!r.width)return -1;
+  var sc=r.width/inf.W;
+  var x=(clientX-r.left)/sc;
+  var best=-1,bd=1e9;
+  for(var k=0;k<inf.noteX.length;k++){
+    var d=Math.abs(inf.noteX[k].x-x);
+    if(d<bd){bd=d;best=inf.noteX[k].i;}
+  }
+  return bd<26?best:-1;
+}
+/* 온음계 한 칸 이동 */
+function stepNote(n,dir,key,nat){
+  var dn=dnumOf(n)+dir;
+  if(dn<26)dn=26; if(dn>45)dn=45;
+  var out={let:LETS[dn%7],oct:Math.floor(dn/7),acc:0};
+  var km=keyAccMap(key);
+  out.acc=km[out.let]||0;
+  if(nat&&nat.indexOf(out.let)>=0)out.acc=0;
+  return out;
 }
 
 /* ══ 커리큘럼 ══ */
@@ -1202,7 +1233,7 @@ function drawDict(){
   h+='<div class="staffbox tap" id="dtStaff" onclick="dictTap(event)"></div>';
   h+='<div class="dt-grp">\uAE38\uC774</div><div class="dt-tools">';
   for(var i=0;i<cfg.durs.length;i++){var d=cfg.durs[i];h+='<button class="dt-t'+(DT.dur===d?' on':'')+'" data-t="dtd'+i+'" onclick="setDur('+d+')">'+durName(d)+'</button>';}
-  if(cfg.rest)h+='<button class="dt-t" data-t="dtrest" onclick="addRest()">\uC26C\uD45C</button>';
+  if(cfg.rest)h+='<button class="dt-t" data-t="dtrest" onclick="addRest()">\uC27C\uD45C</button>';
   h+='</div>';
   if(!cfg.rhythmOnly){
     h+='<div class="dt-grp">\uC784\uC2DC\uD45C</div><div class="dt-tools">';
@@ -1277,7 +1308,7 @@ var SANJO_NAT={'Eb':['A'],'Ab':['D'],'Bb':['E']};
 
 /* ══════ 채보 노트 (자유 기보) ══════ */
 var PADKEY='chaebo-pad-v1';
-var PAD={key:'C',ts:[4,4],bpm:96,jang:'',notes:[],dur:1,acc:'key',gest:''};
+var PAD={key:'C',ts:[4,4],bpm:96,jang:'',notes:[],dur:1,acc:'key',gest:'',mode:'add',sel:-1};
 var JANGPRESET=[
  ['','\uC790\uC720 4/4',[4,4],96],
  ['jinyang','\uC9C4\uC591 18/8',[18,8],40],
@@ -1305,37 +1336,76 @@ function openPad(){
   drawPad();window.scrollTo(0,0);
 }
 function drawPad(){
-  var h='<div class="dt-grp">\uC7A5\uB2E8 \u00B7 \uBC15\uC790\uD45C</div><div class="dt-tools">';
+  var ed=(PAD.mode==='edit'), sel=PAD.sel, has=(ed&&sel>=0&&sel<PAD.notes.length);
+  var h='<div class="dt-grp">장단 · 박자표</div><div class="dt-tools">';
   for(var i=0;i<JANGPRESET.length;i++){
     var j=JANGPRESET[i];
     h+='<button class="dt-t'+(PAD.jang===j[0]?' on':'')+'" data-t="pj'+i+'" onclick="padJang('+i+')">'+j[1]+'</button>';
   }
   h+='</div>';
-  h+='<div class="dt-grp">\uC870\uD45C</div><div class="dt-tools">';
+  h+='<div class="dt-grp">조표</div><div class="dt-tools">';
   for(var k=0;k<PADKEYS.length;k++)h+='<button class="dt-t'+(PAD.key===PADKEYS[k][0]?' on':'')+'" data-t="pk'+k+'" onclick="padSetKey(\''+PADKEYS[k][0]+'\')">'+PADKEYS[k][1]+'</button>';
   h+='</div>';
-  h+='<div class="dt-grp">\uD15C\uD3EC \u2669='+PAD.bpm+'</div><div class="dt-tools">';
-  h+='<button class="dt-t" data-t="pbpm-" onclick="padBpm(-8)">\u2212</button>';
+  h+='<div class="dt-grp">템포 ♩='+PAD.bpm+'</div><div class="dt-tools">';
+  h+='<button class="dt-t" data-t="pbpm-" onclick="padBpm(-8)">−</button>';
   h+='<button class="dt-t" data-t="pbpm+" onclick="padBpm(8)">+</button>';
-  h+='<button class="dt-t" data-t="pplay" onclick="padPlay()">\u25B6 \uC7AC\uC0DD</button>';
-  h+='<button class="dt-t" data-t="pplayc" onclick="padPlay(true)">\u25B6 \uC7A5\uB2E8 \uAC19\uC774</button></div>';
-  h+='<div class="dt-hint">\uC624\uC120\uC744 \uB20C\uB7EC \uC74C\uC744 \uCC0D\uC73C\uC138\uC694 \u00B7 \uCD1D '+PAD.notes.length+'\uC74C</div>';
+  h+='<button class="dt-t" data-t="pplay" onclick="padPlay()">▶ 재생</button>';
+  h+='<button class="dt-t" data-t="pplayc" onclick="padPlay(true)">▶ 장단 같이</button></div>';
+
+  h+='<div class="dt-grp">모드</div><div class="pr-phase">';
+  h+='<button class="dt-t'+(ed?'':' on')+'" data-t="pmadd" onclick="padMode(\'add\')">음 추가</button>';
+  h+='<button class="dt-t'+(ed?' on':'')+'" data-t="pmedit" onclick="padMode(\'edit\')">선택 · 수정</button></div>';
+
+  h+='<div class="dt-hint">'+(ed
+    ?(has?'<b>'+(sel+1)+'번째 음</b> 선택됨 — 아래에서 고치세요'
+         :'고칠 음을 오선에서 누르세요')
+    :'오선을 눌러 음을 찍으세요 · 총 '+PAD.notes.length+'음')+'</div>';
   h+='<div class="staffbox tap" id="padStaff" onclick="padTap(event)"></div>';
-  h+='<div class="dt-grp">\uAE38\uC774</div><div class="dt-tools">';
-  for(var d=0;d<PADDURS.length;d++)h+='<button class="dt-t'+(PAD.dur===PADDURS[d]?' on':'')+'" data-t="pd'+d+'" onclick="padDur('+PADDURS[d]+')">'+durName(PADDURS[d])+'</button>';
-  h+='<button class="dt-t" data-t="prest" onclick="padRest()">\uC26C\uD45C</button></div>';
-  h+='<div class="dt-grp">\uC784\uC2DC\uD45C</div><div class="dt-tools">';
-  var accs=[['key','\uC870\uD45C\uB300\uB85C'],['n','\u266E'],['#','\u266F'],['b','\u266D']];
-  for(var a=0;a<accs.length;a++)h+='<button class="dt-t'+(PAD.acc===accs[a][0]?' on':'')+'" data-t="pa'+a+'" onclick="padAcc(\''+accs[a][0]+'\')">'+accs[a][1]+'</button>';
+
+  if(ed){
+    h+='<div class="dt-grp">음 고르기 · 높이</div><div class="dt-tools">';
+    h+='<button class="dt-t" data-t="pselprev" onclick="padSelMove(-1)">◀ 앞 음</button>';
+    h+='<button class="dt-t" data-t="pselnext" onclick="padSelMove(1)">다음 음 ▶</button>';
+    h+='<button class="dt-t" data-t="pup" onclick="padPitch(1)">▲ 한 칸</button>';
+    h+='<button class="dt-t" data-t="pdown" onclick="padPitch(-1)">▼ 한 칸</button>';
+    h+='<button class="dt-t" data-t="pup8" onclick="padPitch(7)">▲ 옥타브</button>';
+    h+='<button class="dt-t" data-t="pdown8" onclick="padPitch(-7)">▼ 옥타브</button></div>';
+  }
+
+  h+='<div class="dt-grp">길이'+(ed?' (선택한 음)':'')+'</div><div class="dt-tools">';
+  for(var d=0;d<PADDURS.length;d++){
+    var on=ed?(has&&Math.abs(PAD.notes[sel].d-PADDURS[d])<0.001):(PAD.dur===PADDURS[d]);
+    h+='<button class="dt-t'+(on?' on':'')+'" data-t="pd'+d+'" onclick="padDur('+PADDURS[d]+')">'+durName(PADDURS[d])+'</button>';
+  }
+  if(!ed)h+='<button class="dt-t" data-t="prest" onclick="padRest()">쉼표</button>';
   h+='</div>';
-  h+='<div class="dt-grp">\uC2DC\uAE40\uC0C8 (\uB9C8\uC9C0\uB9C9 \uC74C\uC5D0 \uC801\uC6A9)</div><div class="dt-tools">';
-  h+='<button class="dt-t" data-t="pg1" onclick="padGest(\'bend\')">\uAEBE\uAE30 \u2198</button>';
-  h+='<button class="dt-t" data-t="pg2" onclick="padGest(\'fall\')">\uD758\uB9AC\uAE30 \u2198</button>';
-  h+='<button class="dt-t" data-t="pg3" onclick="padGest(\'vib\')">\uC694\uC131 \u301C</button>';
-  h+='<button class="dt-t" data-t="pg0" onclick="padGest(\'\')">\uD574\uC81C</button></div>';
-  h+='<div class="dt-act"><button class="dt-a" data-t="pundo" onclick="padUndo()">\u21B6 \uB418\uB3CC\uB9AC\uAE30</button>';
-  h+='<button class="dt-a" data-t="pclear" onclick="padClear()">\uC804\uCCB4 \uC9C0\uC6B0\uAE30</button></div>';
-  h+='<button class="backbtn" data-t="pback" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
+
+  h+='<div class="dt-grp">임시표'+(ed?' (선택한 음)':'')+'</div><div class="dt-tools">';
+  var accs=[['key','조표대로'],['n','♮'],['#','♯'],['b','♭']];
+  for(var a=0;a<accs.length;a++){
+    var aon=(!ed&&PAD.acc===accs[a][0]);
+    h+='<button class="dt-t'+(aon?' on':'')+'" data-t="pa'+a+'" onclick="padAcc(\''+accs[a][0]+'\')">'+accs[a][1]+'</button>';
+  }
+  h+='</div>';
+
+  h+='<div class="dt-grp">시김새 ('+(ed?'선택한 음':'마지막 음')+'에 적용)</div><div class="dt-tools">';
+  var g0=has?PAD.notes[sel].g:'';
+  h+='<button class="dt-t'+(g0==='bend'?' on':'')+'" data-t="pg1" onclick="padGest(\'bend\')">꺾기 ↘</button>';
+  h+='<button class="dt-t'+(g0==='fall'?' on':'')+'" data-t="pg2" onclick="padGest(\'fall\')">흘리기 ↘</button>';
+  h+='<button class="dt-t'+(g0==='vib'?' on':'')+'" data-t="pg3" onclick="padGest(\'vib\')">요성 〜</button>';
+  h+='<button class="dt-t" data-t="pg0" onclick="padGest(\'\')">해제</button></div>';
+
+  h+='<div class="dt-act">';
+  if(ed){
+    h+='<button class="dt-a" data-t="pins" onclick="padInsert()">앞에 삽입</button>';
+    h+='<button class="dt-a" data-t="pdel" onclick="padDelete()">이 음 삭제</button>';
+    h+='<button class="dt-a" data-t="pdesel" onclick="padDesel()">선택 해제</button>';
+  }else{
+    h+='<button class="dt-a" data-t="pundo" onclick="padUndo()">↶ 되돌리기</button>';
+    h+='<button class="dt-a" data-t="pclear" onclick="padClear()">전체 지우기</button>';
+  }
+  h+='</div>';
+  h+='<button class="backbtn" data-t="pback" onclick="goHome()">← 학습 지도로 돌아가기</button>';
   document.getElementById('padBody').innerHTML=h;
   drawStaff('padStaff',padItems(),{key:PAD.key,ts:PAD.ts,barEvery:padBarEvery(),nat:SANJO_NAT[PAD.key]||null});
 }
@@ -1343,29 +1413,83 @@ function padItems(){
   var r=[];
   for(var i=0;i<PAD.notes.length;i++){
     var x=PAD.notes[i];
-    r.push({n:x.n,d:x.d,g:x.g?{type:x.g}:null});
+    r.push({n:x.n,d:x.d,g:x.g?{type:x.g}:null,
+            cls:(PAD.mode==='edit'&&PAD.sel===i)?'sel':''});
   }
   return r;
 }
 function padJang(i){var j=JANGPRESET[i];PAD.jang=j[0];PAD.ts=j[2];PAD.bpm=j[3];padSave();drawPad();}
 function padSetKey(k){PAD.key=k;padSave();drawPad();}
 function padBpm(d){PAD.bpm=Math.max(24,Math.min(240,PAD.bpm+d));padSave();drawPad();}
-function padDur(d){PAD.dur=d;drawPad();}
-function padAcc(a){PAD.acc=(PAD.acc===a?'key':a);drawPad();}
+function padMode(m){PAD.mode=m;if(m==='add')PAD.sel=-1;drawPad();}
+function padDesel(){PAD.sel=-1;drawPad();}
+function padSelValid(){return PAD.mode==='edit'&&PAD.sel>=0&&PAD.sel<PAD.notes.length;}
+function padSelMove(d){
+  if(!PAD.notes.length)return;
+  var s2=PAD.sel<0?(d>0?0:PAD.notes.length-1):PAD.sel+d;
+  PAD.sel=Math.max(0,Math.min(PAD.notes.length-1,s2));
+  drawPad();
+}
+function padDur(d){
+  if(padSelValid()){PAD.notes[PAD.sel].d=d;padSave();}
+  else PAD.dur=d;
+  drawPad();
+}
+function padAcc(a){
+  if(padSelValid()){
+    var n=PAD.notes[PAD.sel].n;
+    if(n){
+      if(a==='key'){
+        var km=keyAccMap(PAD.key),nt2=SANJO_NAT[PAD.key];
+        n.acc=km[n.let]||0;
+        if(nt2&&nt2.indexOf(n.let)>=0)n.acc=0;
+      }
+      else n.acc=(a==='n'?0:a==='#'?1:-1);
+      padSave();
+    }
+  }else PAD.acc=(PAD.acc===a?'key':a);
+  drawPad();
+}
+function padPitch(d){
+  if(!padSelValid())return;
+  var it=PAD.notes[PAD.sel];
+  if(!it.n)return;
+  it.n=stepNote(it.n,d,PAD.key,SANJO_NAT[PAD.key]||null);
+  padSave();drawPad();
+}
+function padInsert(){
+  if(!padSelValid())return;
+  var src=PAD.notes[PAD.sel];
+  var cp={n:src.n?{let:src.n.let,oct:src.n.oct,acc:src.n.acc}:null,d:src.d,g:''};
+  PAD.notes.splice(PAD.sel,0,cp);
+  padSave();drawPad();
+}
+function padDelete(){
+  if(!padSelValid())return;
+  PAD.notes.splice(PAD.sel,1);
+  if(PAD.sel>=PAD.notes.length)PAD.sel=PAD.notes.length-1;
+  padSave();drawPad();
+}
 function padTap(ev){
+  if(PAD.mode==='edit'){
+    var hit=noteAtX('padStaff',ev.clientX);
+    if(hit>=0)PAD.sel=hit;
+    drawPad();return;
+  }
   var n=pitchAtY('padStaff',ev.clientY,PAD.acc||'key');
   if(!n)return;
   PAD.notes.push({n:n,d:PAD.dur,g:''});
   padSave();drawPad();
 }
 function padRest(){PAD.notes.push({n:null,d:PAD.dur,g:''});padSave();drawPad();}
-function padUndo(){PAD.notes.pop();padSave();drawPad();}
-function padClear(){PAD.notes=[];padSave();drawPad();}
+function padUndo(){PAD.notes.pop();if(PAD.sel>=PAD.notes.length)PAD.sel=PAD.notes.length-1;padSave();drawPad();}
+function padClear(){PAD.notes=[];PAD.sel=-1;padSave();drawPad();}
 function padGest(g){
-  if(!PAD.notes.length)return;
-  var last=PAD.notes[PAD.notes.length-1];
-  if(!last.n)return;
-  last.g=g;padSave();drawPad();
+  var idx=padSelValid()?PAD.sel:PAD.notes.length-1;
+  if(idx<0)return;
+  var it=PAD.notes[idx];
+  if(!it||!it.n)return;
+  it.g=g;padSave();drawPad();
 }
 function gestSpec(g,m){
   if(g==='bend')return{type:'bend',from:m+1};
@@ -1462,7 +1586,7 @@ function drawPiece(){
   h+='<div class="dt-grp">\uAE38\uC774</div><div class="dt-tools">';
   var durs=[2,1.5,1,0.75,0.5,0.25];
   for(var d=0;d<durs.length;d++)h+='<button class="dt-t'+(RP.dur===durs[d]?' on':'')+'" data-t="rd'+d+'" onclick="rpDur('+durs[d]+')">'+durName(durs[d])+'</button>';
-  h+='<button class="dt-t" data-t="rrest" onclick="rpRest()">\uC26C\uD45C</button></div>';
+  h+='<button class="dt-t" data-t="rrest" onclick="rpRest()">\uC27C\uD45C</button></div>';
   h+='<div class="dt-grp">\uC784\uC2DC\uD45C</div><div class="dt-tools">';
   var accs=[['key','\uC870\uD45C\uB300\uB85C'],['n','\u266E'],['#','\u266F'],['b','\u266D']];
   for(var a=0;a<accs.length;a++)h+='<button class="dt-t'+(RP.acc===accs[a][0]?' on':'')+'" data-t="ra'+a+'" onclick="rpAcc(\''+accs[a][0]+'\')">'+accs[a][1]+'</button>';
@@ -1553,7 +1677,7 @@ var METHOD=[
  +'<tr><td>\uC22B\uC790\u00B7\uACC4\uC774\uB984</td><td>\uBA87\uBC88\uC9F8 \uC74C\uC778\uAC00 (\uC0B0\uC870\uB294 \uCCAD \uC774\uB984)</td></tr>'
  +'<tr><td>\uD654\uC0B4\uD45C</td><td>\uB3C4\uC57D\uC758 \uBC29\uD5A5 (\uC21C\uCC28\uB294 \uC548 \uC801\uC74C)</td></tr>'
  +'<tr><td>\uBE48\uCE78</td><td>\uC544\uC9C1 \uBAA8\uB974\uB294 \uACF3</td></tr>'
- +'<tr><td>X</td><td>\uD655\uC2E4\uD55C \uC26C\uD45C</td></tr></table>'
+ +'<tr><td>X</td><td>\uD655\uC2E4\uD55C \uC27C\uD45C</td></tr></table>'
  +'<div class="cnote"><b>\uC77C\uBD80\uB7EC \uBE7C\uB294 \uAC83\u00B7 </b>\uD504\uB85C\uD1A0\uAE30\uBCF4\uC5D4 <b>\uC74C\uC790\uB9AC\uD45C\u00B7\uC870\uD45C\u00B7\uBC15\uC790\uD45C \uBD84\uBAA8\uAC00 \uC5C6\uC5B4\uC694</b>. \uC808\uB300\uC74C\uAC10 \uC5C6\uC774 \uB4E4\uB9AC\uB294 \uAC83\u2014\uBC15\u00B7\uB9AC\uB4EC\u00B7\uBA87\uBC88\uC9F8 \uC74C\u2014\uB9CC \uC801\uC5B4\uC694. \uB098\uBA38\uC9C0\uB294 \uB098\uC911\uC5D0 \uBD99\uC785\uB2C8\uB2E4.</div>'
  +'<p><b>\uC624\uC120\uBCF4\uB85C \uC62E\uAE38 \uB54C \uD544\uC694\uD55C \uAC74 \uC138 \uAC00\uC9C0</b>\uBFD0\uC774\uC5D0\uC694 \u2014 \u2460 \uC74C\uC790\uB9AC\uD45C, \u2461 \uC73C\uB738\uC74C(\uC0B0\uC870\uB294 \uBCF8\uCCAD)\uC774 \uC5B4\uB5A4 \uC74C\uC778\uAC00, \u2462 \uD55C \uBC15\uC774 \uC5B4\uB5A4 \uC74C\uD45C\uC778\uAC00. \uAE34 \uC138\uB85C\uC120\uC740 \uADF8\uB300\uB85C \uB9C8\uB514\uC120\uC774 \uB429\uB2C8\uB2E4.</p>'},
 
@@ -1563,7 +1687,7 @@ var METHOD=[
  +'<table class="ctbl"><tr><th>\uAE30\uD638</th><th>\uB73B</th></tr>'
  +'<tr><td>\uBE57\uAE08 /</td><td>\uC5EC\uAE30\uC11C \uC74C\uC774 <b>\uC2DC\uC791</b></td></tr>'
  +'<tr><td>\uAC00\uB85C\uC120 \u2014</td><td>\uC55E \uC74C\uC774 <b>\uC9C0\uC18D</b></td></tr>'
- +'<tr><td>\uB3D9\uADF8\uB77C\uBBF8 \u25CB</td><td><b>\uC26C\uD45C</b></td></tr></table>'
+ +'<tr><td>\uB3D9\uADF8\uB77C\uBBF8 \u25CB</td><td><b>\uC27C\uD45C</b></td></tr></table>'
  +'<div class="cnote"><b>\uAE38\uC774\uBCF4\uB2E4 \uC2DC\uC791\uC810\u00B7 </b>\uCD5C\uADFC \uC81C\uC548\uB41C \uBC29\uC2DD\uC740 \uC74C\uC758 <b>\uAE38\uC774</b>\uAC00 \uC544\uB2C8\uB77C <b>\uC2DC\uC791\uC810</b>\uB9CC \uD45C\uC2DC\uD558\uAC8C \uD574\uC694. \uAE38\uC774\uB294 \uB2E4\uC74C \uC2DC\uC791\uC810\uAE4C\uC9C0\uB85C \uC800\uC808\uB85C \uACB0\uC815\uB418\uB2C8\uAE4C\uC694. \uD310\uB2E8\uD560 \uAC8C \uD558\uB098 \uC904\uC5B4\uB4ED\uB2C8\uB2E4.</div>'
  +'<p><b>\uBC18\uB4DC\uC2DC \uC190\uC73C\uB85C \uBC15\uC744 \uCE58\uAC70\uB098 \uC9C0\uD718\uD558\uBA74\uC11C</b> \uBC1B\uC544\uC801\uC73C\uC138\uC694. \uBC15\uC744 \uBAB8\uC73C\uB85C \uC7A1\uACE0 \uC788\uC5B4\uC57C \uC5B4\uB290 \uC74C\uC774 \uBC15 \uC704\uC5D0 \uC624\uACE0 \uC5B4\uB290 \uAC83\uC774 \uBC97\uC5B4\uB098\uB294\uC9C0 \uAD6C\uBCC4\uB3FC\uC694.</p>'
  +'<div class="cnote a"><b>\uAD6D\uC545\uC740 \uD2B9\uD788\u00B7 </b>\uC5F0\uAD6C\uB4E4\uC774 \uACF5\uD1B5\uC73C\uB85C \uC9DA\uB294 \uAC8C <b>\uBCF5\uD569\uBC15\uC790(3\uBD84\uBC15)\uC758 \uC5B4\uB824\uC6C0</b>\uC774\uC5D0\uC694. \uAD6D\uC545\uC740 \uB300\uBD80\uBD84 3\uBD84\uBC15\uC774\uB2C8, \uB4E3\uC790\uB9C8\uC790 <b>\uD55C \uBC15\uC774 \uB458\uB85C \uB098\uB258\uB294\uC9C0 \uC14B\uC73C\uB85C \uB098\uB258\uB294\uC9C0</b>\uBD80\uD130 \uD310\uB2E8\uD558\uB294 \uC2B5\uAD00\uC744 \uB4E4\uC5EC\uC57C \uD574\uC694.</div>'},
@@ -1754,7 +1878,7 @@ function drawProto(){
   h+='<button class="dt-t'+(PR.phase==='rhythm'?' on':'')+'" data-t="prph1" onclick="prPhase(\'rhythm\')">1 \uB9AC\uB4EC</button>';
   h+='<button class="dt-t'+(PR.phase==='pitch'?' on':'')+'" data-t="prph2" onclick="prPhase(\'pitch\')">2 \uC74C\uB192\uC774</button></div>';
   h+='<div class="dt-hint">'+(PR.phase==='rhythm'
-    ?'\uACA9\uC790\ub97c \ub20c\ub7ec \uc74c\uc774 <b>\uc2dc\uc791\ud558\ub294 \uc790\ub9ac</b>\ub97c \ucc0d\uc73c\uc138\uc694 (\ub2e4\uc2dc \ub204\ub974\uba74 \uc26c\ud45c \u00D7, \ud55c \ubc88 \ub354 \ub204\ub974\uba74 \uc9c0\uc6c0)'
+    ?'\uACA9\uC790\ub97c \ub20c\ub7ec \uc74c\uc774 <b>\uc2dc\uc791\ud558\ub294 \uc790\ub9ac</b>\ub97c \ucc0d\uc73c\uc138\uc694 (\ub2e4\uc2dc \ub204\ub974\uba74 \uC27C\uD45C \u00D7, \ud55c \ubc88 \ub354 \ub204\ub974\uba74 \uc9c0\uc6c0)'
     :'\uC74C\ud45c\ub97c \ub204\ub974\uace0 \uc544\ub798\uc5d0\uc11c \ub3c4\uc218\ub97c \uace0\ub974\uc138\uc694')+'</div>';
   h+='<div class="protobox tap" id="prGrid" onclick="prTap(event)"></div>';
   if(PR.phase==='pitch'){
@@ -2330,7 +2454,7 @@ var REF={
   ['\uBAA8\uB974\uB374\uD2B8','\uBCF8\uC74C-\uC606\uC74C-\uBCF8\uC74C'],['\uD134','\uC704-\uBCF8-\uC544\uB798-\uBCF8 \uD68C\uC804'],
   ['\uC2A4\uD0C0\uCE74\uD1A0 .','\uC9E7\uAC8C \uB04A\uC5B4 \u00B7 \uC74C\uAC00 \uC548 \uBC14\uB01C'],['\uB808\uAC00\uD1A0 \u2312','\uC774\uC5B4\uC11C \uB9E4\uB044\uB7FD\uAC8C'],
   ['\uC545\uC13C\uD2B8 &gt;','\uADF8 \uC74C\uB9CC \uB3C4\uB4DC\uB77C\uC9C0\uAC8C'],['\uD14C\uB204\uD1A0 \u2013','\uC74C\uAC00\uB97C \uAF49 \uB20C\uB7EC \uCC44\uC6C0'],
-  ['\uC810\uC74C\uD45C','\uC6D0\uB798 \uAE38\uC774 + \uC808\uBC18'],['\uC26C\uD45C','\uC18C\uB9AC \uC5C6\uB294 \uC74C\uAC00 \u2014 \uBE7C\uBA74 \uB9C8\uB514\uAC00 \uC548 \uB9DE\uC74C']],
+  ['\uC810\uC74C\uD45C','\uC6D0\uB798 \uAE38\uC774 + \uC808\uBC18'],['\uC27C\uD45C','\uC18C\uB9AC \uC5C6\uB294 \uC74C\uAC00 \u2014 \uBE7C\uBA74 \uB9C8\uB514\uAC00 \uC548 \uB9DE\uC74C']],
  proc:[['1','연필 놓고 전체를 두세 번 듣는다'],
   ['2','손으로 치며 박을 짚는다'],
   ['3','박이 둘로 나뉘나 셋으로 나뉘나 정한다'],
