@@ -346,14 +346,19 @@ function click(t0,strong){
 }
 /* 선율 재생: seq = [{n:noteObj|null, d:dur(4분=1), g:시김새}] , bpm 기준 4분음표 */
 var PLAYING=[];
-function playSeq(seq,bpm,withClick,beatsPerBar,beatUnit,groups){
-  ac();var sp=60/(bpm||96),t=0.08,totQ=0;
+function playSeq(seq,bpm,withClick,beatsPerBar,beatUnit,groups,countIn){
+  ac();
+  var sp=60/(bpm||96),bu=beatUnit||1,per=beatsPerBar||4;
+  var n0=countIn?(countIn===true?per:countIn):0;
+  var lead=n0*bu*sp;
+  for(var c=0;c<n0;c++)click(0.08+c*bu*sp,c===0);
+  var t=0.08+lead,totQ=0;
   for(var i=0;i<seq.length;i++){
     var it=seq[i],dur=it.d*sp;
     if(it.n)tone(midiOf(it.n),t,Math.max(0.12,dur*0.94),it.g);
     t+=dur;totQ+=it.d;
   }
-  if(withClick)metro(0.08,totQ,sp,beatUnit||1,beatsPerBar||4,groups);
+  if(withClick)metro(0.08+lead,totQ,sp,bu,per,groups);
   return t;
 }
 /* 메트로놈 — 박 단위(4분 기준 길이)로 클릭.
@@ -602,7 +607,7 @@ var CUR=[
  ex:[['느린 맥박','X'],['보통 맥박','X'],['빠른 맥박','X']],
  exPulse:[52,92,150],
  drill:{type:'beatcount'},
- dict:{key:'C',ts:[4,4],bpm:80,pool:['B4'],durs:[1,2],beats:4,rhythmOnly:true}},
+ dict:{key:'C',ts:[4,4],bpm:80,pool:['B4'],durs:[0.25,0.5,0.75,1,1.5,2],beats:4,rest:true,rhythmOnly:true}},
 
 {id:'w2',tr:'w',n:2,t:'으뜸음 찾기',lead:'조표만 보면 바로 나온다.',
  concept:'<p>으뜸음은 <b>귀로도 찾고 악보로도 찾아요</b>. 악보 쪽이 훨씬 빠르니 규칙부터.</p>'
@@ -1331,17 +1336,26 @@ function drillAns(i){
 /* ══ 받아쓰기 ══ */
 var DT={ans:null,inp:[],dur:1,acc:null,si:0,cfg:null};
 /* 박 단위 리듬 조립 */
+/* [패턴, 가중치] — 단순한 것이 자주 나오게 */
 var RPAT={
- 1:[[1],[0.5,0.5],[0.5,0.25,0.25],[0.25,0.25,0.5],[0.75,0.25],[0.25,0.25,0.25,0.25]],
- 1.5:[[1.5],[0.5,0.5,0.5],[1,0.5],[0.5,1],[0.5,0.5,0.25,0.25]]
+ 1:[[[1],5],[[0.5,0.5],4],[[0.75,0.25],2],[[0.5,0.25,0.25],1],[[0.25,0.25,0.5],1],[[0.25,0.25,0.25,0.25],1]],
+ 1.5:[[[1.5],4],[[0.5,0.5,0.5],4],[[1,0.5],3],[[0.5,1],2],[[0.5,0.5,0.25,0.25],1]]
 };
+function pickW(list){
+  var tot=0,i;
+  for(i=0;i<list.length;i++)tot+=list[i][1];
+  var r=Math.random()*tot;
+  for(i=0;i<list.length;i++){r-=list[i][1];if(r<=0)return list[i][0];}
+  return list[list.length-1][0];
+}
 function genRhythm(cfg){
   if(cfg.groups&&cfg.groups.length)return genRhythmGroups(cfg);
   var unit=cfg.unit===0.5?1.5:1, total=cfg.beats*(cfg.bars||1), out=[], left=total;
-  var pats=(RPAT[unit]||RPAT[1]).filter(function(p){
+  var pats=(RPAT[unit]||RPAT[1]).filter(function(pw){
+    var p=pw[0];
     for(var i=0;i<p.length;i++)if(cfg.durs.indexOf(p[i])<0)return false;return true;
   });
-  if(!pats.length)pats=[[unit]];
+  if(!pats.length)pats=[[[unit],1]];
   var longs=cfg.durs.filter(function(d){return d>unit;});
   while(left>0.001){
     if(longs.length&&left>=unit*2-0.001&&rnd(5)===0){
@@ -1349,7 +1363,7 @@ function genRhythm(cfg){
       if(L){out.push(L);left-=L;continue;}
     }
     if(left<unit-0.001){out.push(left);left=0;break;}
-    var p=pick(pats);
+    var p=pickW(pats);
     for(var k=0;k<p.length;k++)out.push(p[k]);
     left-=unit;
   }
@@ -1473,7 +1487,12 @@ function dictUndo(){DT.inp.pop();drawStaff('dtStaff',dictItems(DT.inp),{key:DT.c
 function dictClear(){DT.inp=[];drawStaff('dtStaff',dictItems(DT.inp),{key:DT.cfg.key,ts:DT.cfg.ts,barEvery:DT.cfg.beats,nat:DT.cfg.sanjo?SANJO_NAT[DT.cfg.key]:null,beamGroups:DT.cfg.beamGroups});}
 function dictPlay(rate,withClick){
   var cfg=DT.cfg,a=ac();if(!a)return;
-  var sp=60/(cfg.bpm*(rate||1)),t=0.08,total=0;
+  var sp=60/(cfg.bpm*(rate||1));
+  var bu=cfg.groups?0.5:(cfg.unit===0.5?1.5:1);
+  var per=Math.max(1,Math.round(cfg.beats/bu));
+  var lead=per*bu*sp;
+  for(var c0=0;c0<per;c0++)click(0.08+c0*bu*sp,c0===0);
+  var t=0.08+lead,total=0;
   for(var i=0;i<DT.ans.length;i++){
     var it=DT.ans[i],dur=it.d*sp;
     if(it.n){
@@ -1487,11 +1506,7 @@ function dictPlay(rate,withClick){
     }
     t+=dur;total+=it.d;
   }
-  if(withClick){
-    var bu=cfg.groups?0.5:(cfg.unit===0.5?1.5:1);
-    var per=Math.max(1,Math.round(cfg.beats/bu));
-    metro(0.08,total,sp,bu,per,cfg.groups||null);
-  }
+  if(withClick)metro(0.08+lead,total,sp,bu,per,cfg.groups||null);
 }
 function dictCheck(){
   var a=DT.ans,b=DT.inp,ok=true,marks=[];
@@ -1715,7 +1730,7 @@ function padPlay(withClick){
   }
   if(!seq.length)return;
   var g=(PAD.jang==='eot')?[3,2,3,2]:null;
-  playSeq(seq,PAD.bpm,!!withClick,tsBeats(PAD.ts),tsBeatUnit(PAD.ts),g);
+  playSeq(seq,PAD.bpm,!!withClick,tsBeats(PAD.ts),tsBeatUnit(PAD.ts),g,!!withClick);
 }
 
 /* ══════ 실전 곡 채보 ══════ */
@@ -1833,7 +1848,7 @@ function tsBeatUnit(ts){return (ts[1]===8&&ts[0]%3===0)?1.5:1;}
 function tsBeats(ts){var bu=tsBeatUnit(ts);return Math.round(ts[0]*(4/ts[1])/bu);}
 function rpPlay(rate,withClick){
   var P=PIECES[RP.pi];
-  playSeq(pieceMeasure(P,RP.mi),P.bpm*(rate||1),!!withClick,tsBeats(P.ts),tsBeatUnit(P.ts));
+  playSeq(pieceMeasure(P,RP.mi),P.bpm*(rate||1),!!withClick,tsBeats(P.ts),tsBeatUnit(P.ts),null,true);
 }
 function rpPlayAll(){
   var P=PIECES[RP.pi];
