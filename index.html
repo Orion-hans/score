@@ -1348,24 +1348,36 @@ function pickW(list){
   for(i=0;i<list.length;i++){r-=list[i][1];if(r<=0)return list[i][0];}
   return list[list.length-1][0];
 }
+/* 여러 박에 걸치는 패턴 — [음표들, 차지하는 박 수, 가중치] */
+var RMULTI={
+ 1:[[[2],2,3],[[1.5,0.5],2,3],[[3],3,1],[[4],4,1]],
+ 1.5:[[[3],2,2]]
+};
 function genRhythm(cfg){
   if(cfg.groups&&cfg.groups.length)return genRhythmGroups(cfg);
-  var unit=cfg.unit===0.5?1.5:1, total=cfg.beats*(cfg.bars||1), out=[], left=total;
-  var pats=(RPAT[unit]||RPAT[1]).filter(function(pw){
+  var unit=cfg.unit===0.5?1.5:1;
+  var totalBeats=Math.round(cfg.beats*(cfg.bars||1)/unit);
+  var single=(RPAT[unit]||RPAT[1]).filter(function(pw){
     var p=pw[0];
-    for(var i=0;i<p.length;i++)if(cfg.durs.indexOf(p[i])<0)return false;return true;
+    for(var i=0;i<p.length;i++)if(cfg.durs.indexOf(p[i])<0)return false;
+    return true;
   });
-  if(!pats.length)pats=[[[unit],1]];
-  var longs=cfg.durs.filter(function(d){return d>unit;});
-  while(left>0.001){
-    if(longs.length&&left>=unit*2-0.001&&rnd(5)===0){
-      var L=pick(longs.filter(function(d){return d<=left+0.001;})||[]);
-      if(L){out.push(L);left-=L;continue;}
+  if(!single.length)single=[[[unit],1]];
+  var multi=(RMULTI[unit]||[]).filter(function(m){
+    for(var i=0;i<m[0].length;i++)if(cfg.durs.indexOf(m[0][i])<0)return false;
+    return true;
+  });
+  var out=[],b=0,guard=0;
+  while(b<totalBeats&&guard++<200){
+    var remain=totalBeats-b;
+    var cands=[];
+    for(var k=0;k<multi.length;k++)if(multi[k][1]<=remain)cands.push([multi[k],multi[k][2]]);
+    if(cands.length&&Math.random()<0.32){
+      var m=pickW(cands);
+      out=out.concat(m[0]);b+=m[1];
+    }else{
+      out=out.concat(pickW(single));b+=1;
     }
-    if(left<unit-0.001){out.push(left);left=0;break;}
-    var p=pickW(pats);
-    for(var k=0;k<p.length;k++)out.push(p[k]);
-    left-=unit;
   }
   return out;
 }
