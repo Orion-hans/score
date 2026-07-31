@@ -103,6 +103,12 @@ header .sub{font-size:.76rem;color:var(--muted);font-family:var(--mono);font-wei
 .ctbl td b{color:var(--mint);}
 
 .sub2{color:var(--muted);font-size:.86em;}
+.dt-t.stop,.cex-b.stop,.dr-pb.sec2[data-t$='stop']{color:var(--coral);border-color:rgba(255,133,117,.45);}
+.handrow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px 10px;margin:12px 0;}
+.handcell{flex:0 0 auto;}
+.mh{font-size:.86rem;font-weight:800;color:var(--mint);margin:18px 0 6px;}
+.prep{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin:0 0 14px;font-size:.93rem;line-height:1.75;}
+.prep b{color:var(--mint);}
 .cnote{background:rgba(111,233,205,.09);border-left:3px solid var(--mint);border-radius:0 9px 9px 0;padding:11px 13px;font-size:.86rem;line-height:1.6;margin:12px 0;}
 .cnote.a{background:rgba(245,209,143,.09);border-left-color:var(--amber);}
 .cnote b{color:var(--text);}
@@ -250,12 +256,6 @@ header .sub{font-size:.76rem;color:var(--muted);font-family:var(--mono);font-wei
     <div id="mapW"></div>
     <div class="map-h sanjo">산조 채보 트랙 · S1~S5</div>
     <div id="mapS"></div>
-    <div class="map-h tool">실제 채보</div>
-    <button class="toolbtn" data-t="audio" onclick="openAudio()"><b>음원 구간 반복</b></button>
-    <button class="toolbtn" data-t="proto" onclick="openProto()"><b>프로토기보 연습</b></button>
-    <button class="toolbtn" data-t="pad" onclick="openPad()"><b>채보 노트</b></button>
-    <button class="toolbtn" data-t="real" onclick="openReal()"><b>가락 채보</b></button>
-    <button class="refbtn" data-t="ref" onclick="openRef('yul')">참고 사전</button>
   </div>
   <div id="lesson"><div id="lessonBody"></div></div>
 </div>
@@ -271,8 +271,19 @@ header .sub{font-size:.76rem;color:var(--muted);font-family:var(--mono);font-wei
 </script>
 <script>
 /* ══ 오디오 엔진 ══ */
-var AC=null;
+var AC=null,MASTER=null;
 function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC;}
+/* 모든 합성음은 마스터를 거친다 — 끊으면 예약된 소리까지 즉시 무음 */
+function master(){
+  var a=ac();if(!a)return null;
+  if(!MASTER){MASTER=a.createGain();MASTER.gain.value=1;MASTER.connect(a.destination);}
+  return MASTER;
+}
+function stopAll(){
+  if(!AC)return;
+  if(MASTER){try{MASTER.disconnect();}catch(e){}}
+  MASTER=AC.createGain();MASTER.gain.value=1;MASTER.connect(AC.destination);
+}
 var SEMI={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 var LETS=['C','D','E','F','G','A','B'];
 function midiOf(n){return 12*(n.oct+1)+SEMI[n.let]+(n.acc||0);}
@@ -283,7 +294,7 @@ function dnumOf(n){return n.oct*7+LETS.indexOf(n.let);}
 function tone(m,t0,dur,g,vol){
   var a=ac();if(!a)return;
   var t=a.currentTime+t0;
-  var out=a.createGain();out.connect(a.destination);
+  var out=a.createGain();out.connect(master());
   var v=(vol==null?0.22:vol);
   out.gain.setValueAtTime(0.0001,t);
   out.gain.exponentialRampToValueAtTime(v,t+0.02);
@@ -333,7 +344,7 @@ function tone(m,t0,dur,g,vol){
     var ng=a.createGain();ng.gain.setValueAtTime(0.0001,t);
     ng.gain.exponentialRampToValueAtTime(v*0.1,t+0.03);
     ng.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    nb.connect(bp);bp.connect(ng);ng.connect(a.destination);
+    nb.connect(bp);bp.connect(ng);ng.connect(master());
     nb.start(t);nb.stop(t+dur);
   }
 }
@@ -342,7 +353,7 @@ function click(t0,strong){
   var o=a.createOscillator();o.type='square';o.frequency.value=strong?1500:1000;
   var gn=a.createGain();gn.gain.setValueAtTime(strong?0.14:0.07,t);
   gn.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
-  o.connect(gn);gn.connect(a.destination);o.start(t);o.stop(t+0.06);
+  o.connect(gn);gn.connect(master());o.start(t);o.stop(t+0.06);
 }
 /* 선율 재생: seq = [{n:noteObj|null, d:dur(4분=1), g:시김새}] , bpm 기준 4분음표 */
 var PLAYING=[];
@@ -607,24 +618,27 @@ var CUR=[
  ex:[['느린 맥박','X'],['보통 맥박','X'],['빠른 맥박','X']],
  exPulse:[52,92,150],
  drill:{type:'beatcount'},
- dict:{key:'C',ts:[4,4],bpm:80,pool:['B4'],durs:[0.25,0.5,0.75,1,1.5,2],beats:4,rest:true,rhythmOnly:true}},
+ dict:{key:'C',ts:[4,4],tsPool:[[2,4],[3,4],[4,4]],bpm:80,pool:['B4'],durs:[0.25,0.5,0.75,1,1.5,2],beats:4,rest:true,rhythmOnly:true}},
 
 {id:'w2',tr:'w',n:2,t:'으뜸음 찾기',lead:'조표만 보면 바로 나온다.',
- concept:'<p>으뜸음은 <b>귀로도 찾고 악보로도 찾아요</b>. 악보 쪽이 훨씬 빠르니 규칙부터.</p>'
- +'<table class="ctbl"><tr><th>조표</th><th>장조 으뜸음</th></tr>'
- +'<tr><td><b>\u266D</b></td><td>마지막 \u266D의 <b>바로 앞 \u266D</b><br><span class="sub2">= 마지막 \u266D에서 완전4도 아래</span></td></tr>'
- +'<tr><td><b>\u266F</b></td><td>마지막 \u266F의 <b>반음 위</b></td></tr>'
+ concept:'<p>악보를 펴면 제일 먼저 볼 것. <b>조표를 보고 조 이름을 찾습니다.</b> 규칙 두 줄이면 끝나요.</p>'
+ +'<table class="ctbl"><tr><th>조표</th><th>장조 이름</th></tr>'
+ +'<tr><td><b>\u266D</b>이 여러 개</td><td>마지막 \u266D <b>바로 앞의 \u266D</b></td></tr>'
+ +'<tr><td><b>\u266F</b></td><td>마지막 \u266F <b>하나 위</b></td></tr>'
  +'<tr><td>없음</td><td><b>C</b></td></tr>'
  +'<tr><td>\u266D 하나</td><td><b>F</b> \u2014 앞이 없으니 외울 것</td></tr></table>'
- +'<div class="cnote"><b>예 \u00B7 </b>\u266D3개(시 미 라 = B\u266D E\u266D A\u266D) \u2192 마지막이 A\u266D, 바로 앞은 <b>E\u266D</b>장조.<br>\u266F2개(파 도 = F\u266F C\u266F) \u2192 마지막 C\u266F의 반음 위 = <b>D</b>장조.</div>'
- +'<p>여기서 <b>장3도 아래</b>가 나란한 단조의 으뜸음이에요. C장조 \u2192 a단조.</p>'
- +'<table class="ctbl"><tr><th>끝나는 음</th><th>판단</th></tr>'
- +'<tr><td><b>도 · 미 · 솔</b></td><td>장조</td></tr>'
- +'<tr><td><b>라 · 도 · 미</b></td><td>단조</td></tr></table>'
- +'<p>조표가 같아도 장조와 단조가 갈리니, <b>첫 마디와 끝 마디</b>가 어느 쪽 세 음으로 맺는지 보세요.</p>',
- ex:[['C장조 \u2014 도미솔로 맺음','C4 E4 G4 E4 C4'],['a단조 \u2014 라도미로 맺음','A4 C5 E5 C5 A4'],['E\u266D장조 음계','Eb4 F4 G4 Ab4 Bb4 C5 D5 Eb5'],['D장조 음계','D4 E4 F#4 G4 A4 B4 C#5 D5']],
+ +'<div class="cnote"><b>예 \u00B7 </b>\u266D 세 개가 B\u266D E\u266D A\u266D \u2192 마지막이 A\u266D, 바로 앞은 <b>E\u266D</b>. E\u266D장조.<br>\u266F 두 개가 F\u266F C\u266F \u2192 마지막 C\u266F 하나 위는 <b>D</b>. D장조.</div>'
+ +'<p>그런데 <b>조표 하나에 조가 둘</b>이에요. 장조 하나와 단조 하나가 같은 조표를 씁니다. 단조 이름은 장조 이름에서 <b>두 칸 아래</b>예요.</p>'
+ +'<table class="ctbl"><tr><th>조표</th><th>장조</th><th>단조</th></tr>'
+ +'<tr><td>없음</td><td>C</td><td>a</td></tr>'
+ +'<tr><td>\u266F 하나</td><td>G</td><td>e</td></tr>'
+ +'<tr><td>\u266D 하나</td><td>F</td><td>d</td></tr>'
+ +'<tr><td>\u266D 둘</td><td>B\u266D</td><td>g</td></tr></table>'
+ +'<div class="cnote"><b>둘 중 어느 쪽인지는 \u00B7 </b><b>끝나는 음</b>을 보세요. 두 후보 중 <b>끝음과 이름이 같은 쪽</b>이 답입니다. E\u266D로 끝나면 E\u266D장조, C로 끝나면 c단조.</div>'
+ +'<p>첫 마디도 같이 보면 더 확실해요. 곡은 대개 으뜸음에서 시작해 으뜸음으로 끝납니다.</p>',
+ ex:[['C장조 \u2014 C로 끝남','C4 E4 G4 E4 C4'],['a단조 \u2014 A로 끝남','A4 C5 E5 C5 A4'],['E\u266D장조 음계','Eb4 F4 G4 Ab4 Bb4 C5 D5 Eb5'],['D장조 음계','D4 E4 F#4 G4 A4 B4 C#5 D5']],
  drill:{type:'tonicsig'},
- dict:{key:'C',ts:[4,4],bpm:84,pool:['B4'],durs:[0.5,1,1.5,2],beats:4,rest:true,rhythmOnly:true}},
+ dict:{key:'C',ts:[4,4],tsPool:[[2,4],[3,4],[4,4]],bpm:84,pool:['B4'],durs:[0.5,1,1.5,2],beats:4,rest:true,rhythmOnly:true}},
 
 {id:'w3',tr:'w',n:3,t:'강박과 박자표',lead:'무게가 실리는 곳이 마디의 시작. 박 수를 세면 박자표가 나온다.',
  concept:'<p>박은 균등하지만 <b>무게는 균등하지 않아요</b>. 주기적으로 힘이 실리는 박이 있고, 그게 <b>강박</b> = 마디의 첫 박이에요.</p>'
@@ -638,16 +652,16 @@ var CUR=[
  ex:[['2박자','X'],['3박자','X'],['4박자','X']],
  exMeterClick:[2,3,4],
  drill:{type:'meter'},
- dict:{key:'C',ts:[3,4],bpm:88,pool:['B4'],durs:[1,2],beats:3,rhythmOnly:true}},
+ dict:{key:'C',ts:[3,4],tsPool:[[2,4],[3,4],[4,4]],bpm:88,pool:['B4'],durs:[0.5,1,1.5,2],beats:3,rest:true,rhythmOnly:true}},
 
 {id:'w4',tr:'w',n:4,t:'2분박이냐 3분박이냐',lead:'박이 둘로 나뉘나 셋으로 나뉘나. 국악 채보의 갈림길.',
  concept:'<p>박을 찾았으면 다음은 <b>그 박이 어떻게 쪼개지는가</b>예요. 이게 박자표 체계 전체를 갈라요.</p>'
  +'<table class="ctbl"><tr><th>구분</th><th>박의 분할</th><th>한 박</th><th>박자표</th></tr>'
- +'<tr><td><b>단순박자</b></td><td><b>2</b>등분</td><td>4분음표</td><td>2/4 3/4 4/4</td></tr>'
- +'<tr><td><b>복합박자</b></td><td><b>3</b>등분</td><td>점4분음표</td><td>6/8 9/8 12/8</td></tr></table>'
+ +'<tr><td><b>2분박</b></td><td><b>2</b>등분</td><td>4분음표</td><td>2/4 3/4 4/4</td></tr>'
+ +'<tr><td><b>3분박</b></td><td><b>3</b>등분</td><td>점4분음표</td><td>6/8 9/8 12/8</td></tr></table>'
  +'<p>구별법은 간단해요. 한 박 안에서 <b>"하나 둘"로 세지나 "하나 둘 셋"으로 세지나</b>.</p>'
  +'<div class="cnote a"><b>국악은 대부분 3분박 · </b>진양·중중모리·자진모리·휘모리가 전부 3분박이에요. 2분박은 중모리 정도. 그래서 국악을 채보하려면 <b>이 판별이 습관이 돼야</b> 합니다.</div>'
- +'<p>연구들이 공통으로 짚는 게 복합박자의 어려움이에요. 서양음악 위주로 배우면 2분박에 익숙해져 3분박을 놓칩니다. 여기서 시간을 들이세요.</p>',
+ +'<p>연구들이 공통으로 짚는 게 3분박의 어려움이에요. 서양음악 위주로 배우면 2분박에 익숙해져 3분박을 놓칩니다. 여기서 시간을 들이세요.</p>',
  ex:[['2분박','X'],['3분박','X'],['2분박 빠르게','X'],['3분박 빠르게','X']],
  exDiv:[2,3,2,3],exDivBpm:[76,76,132,132],
  drill:{type:'division'},
@@ -655,13 +669,13 @@ var CUR=[
 
 {id:'w5',tr:'w',n:5,t:'음가와 쉼표',lead:'각 음이 몇 박을 차지하나. 쉼표도 음가다.',
  concept:'<p><b>음가</b>는 음이 차지하는 길이예요. 박을 기준으로 잽니다.</p>'
- +'<table class="ctbl"><tr><th>음표</th><th>단순박자</th></tr>'
+ +'<table class="ctbl"><tr><th>음표</th><th>2분박</th></tr>'
  +'<tr><td>온음표</td><td>4박</td></tr><tr><td>2분음표</td><td>2박</td></tr>'
  +'<tr><td>4분음표</td><td><b>1박</b></td></tr><tr><td>8분음표</td><td>\u00BD박</td></tr>'
  +'<tr><td>16분음표</td><td>\u00BC박</td></tr></table>'
  +'<p><b>점</b>은 원래 길이의 절반을 더해요. 점4분음표 = 4분 + 8분 = 1\u00BD박.</p>'
  +'<div class="cnote"><b>쉼표를 빠뜨리지 말 것 · </b>쉼표도 <b>음가를 차지해요</b>. 소리가 없다고 넘어가면 마디가 안 맞습니다. 채보에서 가장 흔한 실수예요.</div>'
- +'<p>복합박자에선 <b>점4분음표가 한 박</b>이고 8분음표 셋이 한 박을 채워요. 같은 음표가 박자에 따라 다른 역할을 합니다.</p>',
+ +'<p>3분박에선 <b>점4분음표가 한 박</b>이고 8분음표 셋이 한 박을 채워요. 같은 음표가 박자에 따라 다른 역할을 합니다.</p>',
  ex:[['1박 · 2박 · 4박','X'],['\u00BD박 연속','X'],['점4분음표','X'],['쉼표 섞임','X']],
  exVal:[[1,2,4],[0.5,0.5,0.5,0.5],[1.5,0.5,1.5,0.5],[1,'r',1,'r']],
  drill:{type:'noteval'},
@@ -696,7 +710,7 @@ var CUR=[
  drill:{type:'rhythmpat'},
  dict:{key:'C',ts:[4,4],bpm:84,pool:['B4'],durs:[0.25,0.5,0.75,1,1.5,2],beats:4,rest:true,rhythmOnly:true}},
 
-{id:'w8',tr:'w',n:8,t:'복합박자 받아쓰기',lead:'3분박 세계. 6/8 · 9/8 · 12/8과 셋잇단.',
+{id:'w8',tr:'w',n:8,t:'3분박 받아쓰기',lead:'3분박 세계. 6/8 · 9/8 · 12/8과 셋잇단.',
  concept:'<p>3분박을 실제로 받아써요. 국악 채보의 토대입니다.</p>'
  +'<table class="ctbl"><tr><th>박자표</th><th>점4분 박</th><th>8분음표</th></tr>'
  +'<tr><td>6/8</td><td>2박</td><td>6개</td></tr>'
@@ -708,7 +722,7 @@ var CUR=[
  +'<tr><td>8분 3개</td><td>고르게 셋</td></tr>'
  +'<tr><td>4분 + 8분</td><td>길게-짧게</td></tr>'
  +'<tr><td>8분 + 4분</td><td>짧게-길게</td></tr></table>'
- +'<p><b>셋잇단음표</b>는 반대 방향이에요 \u2014 단순박자 안에서 한 박을 셋으로 빌려 쪼갭니다. 3분박을 미리 맛보는 다리죠.</p>'
+ +'<p><b>셋잇단음표</b>는 반대 방향이에요 \u2014 2분박 안에서 한 박을 셋으로 빌려 쪼갭니다. 3분박을 미리 맛보는 다리죠.</p>'
  +'<div class="cnote a"><b>국악 리듬형 · </b>점4분 한 박 안에서 8분·16분 조합이 자주 나와요. 절대적이진 않지만 익혀두면 빨리 잡힙니다.</div>',
  ex:[['6/8','X'],['12/8','X'],['셋잇단 (4/4 안에서)','X']],
  exCompound:[[6,8,72],[12,8,76],[4,4,'trip']],
@@ -1076,7 +1090,7 @@ function genDrill(type){
       plays:[['듣기',items.map(function(x){return {n:x.n,d:x.d*0.6};})]],
       staff:{items:items,opt:{key:S.k,labels:false}},
       opts:op,ans:op.indexOf(ansName),
-      exp:(S.k==='C'?'조표 없음':(sigKind(S.k)<0?'마지막 ♭의 바로 앞':'마지막 ♯의 반음 위'))
+      exp:(S.k==='C'?'조표 없음':(sigKind(S.k)<0?'마지막 ♭ 바로 앞':'마지막 ♯ 하나 위'))
         +' → '+S.maj+'장조 / 나란한 '+S.min+'단조. 끝음 '+nm(mel[mel.length-1])+' → '+ansName};
   }
   if(type==='interval'){
@@ -1121,7 +1135,7 @@ function genDrill(type){
   if(type==='compound'){
     var cs=[[6,'6/8 \u2014 \uC8104\uBD84 2\uBC15'],[9,'9/8 \u2014 \uC8104\uBD84 3\uBC15'],[12,'12/8 \u2014 \uC8104\uBD84 4\uBC15']];
     var C3=pick(cs),op4=cs.map(function(x){return x[1];});
-    return{q:'\uC5B4\uB5A4 \uBCF5\uD569\uBC15\uC790\uC778\uAC00\uC694? (\uC810\uC0AC\uBD84 \uBC15\uC744 \uC138\uC5B4\uBCF4\uC138\uC694)',plays:[['\uB4E3\uAE30',{compound:C3[0]}]],
+    return{q:'\uC5B4\uB5A4 3\uBD84\uBC15\uC778\uAC00\uC694? (\uC810\uC0AC\uBD84 \uBC15\uC744 \uC138\uC5B4\uBCF4\uC138\uC694)',plays:[['\uB4E3\uAE30',{compound:C3[0]}]],
       opts:op4,ans:op4.indexOf(C3[1]),exp:C3[1]};
   }
   if(type==='stepleap'){
@@ -1170,7 +1184,7 @@ function genDrill(type){
   if(type==='keysig'){
     var qs=[['\u266F\uC774 \uBD99\uB294 \uC21C\uC11C\uB294?',['\uD30C \uB3C4 \uC194 \uB808 \uB77C \uBBF8 \uC2DC','\uC2DC \uBBF8 \uB77C \uB808 \uC194 \uB3C4 \uD30C','\uB3C4 \uB808 \uBBF8 \uD30C \uC194 \uB77C \uC2DC','\uD30C \uC194 \uB808 \uB77C \uBBF8 \uC2DC \uB3C4'],0,'F C G D A E B'],
       ['\u266D\uC774 \uBD99\uB294 \uC21C\uC11C\uB294?',['\uD30C \uB3C4 \uC194 \uB808 \uB77C \uBBF8 \uC2DC','\uC2DC \uBBF8 \uB77C \uB808 \uC194 \uB3C4 \uD30C','\uB77C \uB808 \uC194 \uB3C4 \uD30C \uC2DC \uBBF8','\uBBF8 \uB77C \uB808 \uC194 \uB3C4 \uD30C \uC2DC'],1,'B E A D G C F \u2014 \u266F \uC21C\uC11C\uC758 \uC5ED\uC21C'],
-      ['\u266F\uC870\uC758 \uC73C\uB738\uC74C \uCC3E\uB294 \uBC95\uC740?',['\uB9C8\uC9C0\uB9C9 \u266F\uC758 \uBC18\uC74C \uC704','\uB9C8\uC9C0\uB9C9 \u266F \uC790\uCCB4','\uCCAB \u266F\uC758 \uC544\uB798','\uB9C8\uC9C0\uB9C9\uC5D0\uC11C \uB450 \uBC88\uC9F8'],0,'\uC608: \uB9C8\uC9C0\uB9C9 \u266F\uC774 F\u266F \u2192 G\uC7A5\uC870'],
+      ['\u266F\uC870\uC758 \uC73C\uB738\uC74C \uCC3E\uB294 \uBC95\uC740?',['\uB9C8\uC9C0\uB9C9 \u266F \uD558\uB098 \uC704','\uB9C8\uC9C0\uB9C9 \u266F \uC790\uCCB4','\uCCAB \u266F\uC758 \uC544\uB798','\uB9C8\uC9C0\uB9C9\uC5D0\uC11C \uB450 \uBC88\uC9F8'],0,'\uC608: \uB9C8\uC9C0\uB9C9 \u266F\uC774 F\u266F \u2192 G\uC7A5\uC870'],
       ['\u266D\uC870\uC758 \uC73C\uB738\uC74C \uCC3E\uB294 \uBC95\uC740?',['\uB9C8\uC9C0\uB9C9 \u266D','\uB9C8\uC9C0\uB9C9\uC5D0\uC11C \uB450 \uBC88\uC9F8 \u266D','\uCCAB \u266D\uC758 \uC704','\uB9C8\uC9C0\uB9C9 \u266D\uC758 \uBC18\uC74C \uC544\uB798'],1,'\u266D2\uAC1C(B\u266D E\u266D) \u2192 B\u266D\uC7A5\uC870']];
     var Q=pick(qs);return{q:Q[0],plays:[],opts:Q[1],ans:Q[2],exp:Q[3]};
   }
@@ -1202,7 +1216,7 @@ function genDrill(type){
   if(type==='division'){
     var three=rnd(2)===0;
     return{q:'\uBC15\uC774 \uBA87\uC73C\uB85C \uB098\uB258\uB098\uC694?',plays:[['\uB4E3\uAE30',{div:three?3:2}]],
-      opts:['2\uBD84\uBC15 (\uB2E8\uC21C\uBC15\uC790)','3\uBD84\uBC15 (\uBCF5\uD569\uBC15\uC790)'],ans:three?1:0,
+      opts:['2\uBD84\uBC15 (2\uBD84\uBC15)','3\uBD84\uBC15 (3\uBD84\uBC15)'],ans:three?1:0,
       exp:three?'\uD55C \uBC15 = \uC8104\uBD84\uC74C\uD45C. 6/8\u00B79/8\u00B712/8':'\uD55C \uBC15 = 4\uBD84\uC74C\uD45C. 2/4\u00B73/4\u00B74/4'};
   }
   if(type==='addmeter'){
@@ -1308,6 +1322,7 @@ function renderDrill(si){
   if(d.plays.length){
     h+='<div class="dr-play">';
     for(var i=0;i<d.plays.length;i++)h+='<button class="dr-pb" data-t="drplay'+i+'" onclick="drillPlayIdx('+i+')">\u25B6 '+d.plays[i][0]+'</button>';
+    h+='<button class="dr-pb sec2" data-t="drstop" onclick="stopAll()">\u25A0 \uC815\uC9C0</button>';
     h+='<button class="dr-pb sec2" data-t="drnext" onclick="renderDrill('+si+')">\u21BB \uC0C8 \uBB38\uC81C</button></div>';
   }else{
     h+='<div class="dr-play"><button class="dr-pb sec2" data-t="drnext" onclick="renderDrill('+si+')">\u21BB \uC0C8 \uBB38\uC81C</button></div>';
@@ -1441,9 +1456,18 @@ function genMelody(cfg){
   return out;
 }
 function dictItems(arr){var r=[];for(var i=0;i<arr.length;i++)r.push({n:arr[i].n,d:arr[i].d});return r;}
+function dictCfg(base){
+  if(!base.tsPool||!base.tsPool.length)return base;
+  var ts=pick(base.tsPool),cfg={};
+  for(var k in base)cfg[k]=base[k];
+  cfg.ts=ts;
+  cfg.beats=ts[0]*(4/ts[1]);
+  cfg.unit=(ts[1]===8&&ts[0]%3===0)?0.5:undefined;
+  return cfg;
+}
 function newDict(si){
-  var st=CUR[si],cfg=st.dict;DT.si=si;DT.cfg=cfg;
-  DT.ans=genMelody(cfg);DT.inp=[];DT.dur=cfg.durs[cfg.durs.length>2?1:0];DT.acc='key';
+  var st=CUR[si],cfg=dictCfg(st.dict);DT.si=si;DT.cfg=cfg;
+  DT.ans=genMelody(cfg);DT.inp=[];DT.dur=cfg.durs[cfg.durs.length>2?1:0];DT.acc='key';DT.kind='note';
   DT.ornAt=null;
   if(cfg.orn){
     DT.ornAt={};
@@ -1461,14 +1485,19 @@ function drawDict(){
   h+='<div class="dt-meta">'+(cfg.sanjo?'\uBCF8\uCCAD C \u00B7 ':'')+'\uC870\uD45C '+(cfg.key==='C'?'\uC5C6\uC74C':cfg.key)+' \u00B7 '+cfg.ts[0]+'/'+cfg.ts[1]+' \u00B7 \u2669='+cfg.bpm+' \u00B7 '+(cfg.bars||1)+'\uB9C8\uB514</div>';
   h+='<div class="dt-tools"><button class="dt-t on" data-t="dtplay" onclick="dictPlay()">\u25B6 \uB4E3\uAE30</button>';
   h+='<button class="dt-t" data-t="dtslow" onclick="dictPlay(0.65)">\u25B6 \uB290\uB9AC\uAC8C</button>';
-  h+='<button class="dt-t" data-t="dtclick" onclick="dictPlay(1,true)">\u25B6 \uBC15\uD45C \uAC19\uC774</button></div>';
+  h+='<button class="dt-t" data-t="dtclick" onclick="dictPlay(1,true)">\u25B6 \uBC15\uD45C \uAC19\uC774</button>';
+  h+='<button class="dt-t stop" data-t="dtstop" onclick="stopAll()">\u25A0 \uC815\uC9C0</button></div>';
   h+='<div class="dt-hint">'+(cfg.rhythmOnly
-      ?'<b>\uB9AC\uB4EC\uB9CC</b> \uBC1B\uC544\uC801\uC5B4\uC694 \u2014 \uC74C\uB192\uC774\uB294 \uBB34\uC2DC\uD574\uC694. \uAE38\uC774\uB97C \uACE0\uB974\uACE0 \uC624\uC120\uC744 \uB204\uB974\uC138\uC694.'
+      ?('<b>리듬만</b> 받아적어요 — 음높이는 무시해요. '+(DT.kind==='rest'?'<b>쉼표</b>':'<b>음표</b>')+' 길이를 고르고 오선을 누르세요.')
       :'\uC624\uC120\uC744 \uB20C\uB7EC \uC74C\uC744 \uCC0D\uC73C\uC138\uC694')+'</div>';
   h+='<div class="staffbox tap" id="dtStaff" onclick="dictTap(event)"></div>';
-  h+='<div class="dt-grp">\uAE38\uC774</div><div class="dt-tools">';
+  if(cfg.rest){
+    h+='<div class="dt-grp">종류</div><div class="pr-phase">';
+    h+='<button class="dt-t'+(DT.kind!=='rest'?' on':'')+'" data-t="dtkn" onclick="setKind(\'note\')">♪ 음표</button>';
+    h+='<button class="dt-t'+(DT.kind==='rest'?' on':'')+'" data-t="dtkr" onclick="setKind(\'rest\')">𝄽 쉼표</button></div>';
+  }
+  h+='<div class="dt-grp">길이'+(cfg.rest&&DT.kind==='rest'?' (쉼표)':'')+'</div><div class="dt-tools">';
   for(var i=0;i<cfg.durs.length;i++){var d=cfg.durs[i];h+='<button class="dt-t'+(DT.dur===d?' on':'')+'" data-t="dtd'+i+'" onclick="setDur('+d+')">'+durName(d)+'</button>';}
-  if(cfg.rest)h+='<button class="dt-t" data-t="dtrest" onclick="addRest()">\uC27C\uD45C</button>';
   h+='</div>';
   if(!cfg.rhythmOnly){
     h+='<div class="dt-grp">\uC784\uC2DC\uD45C</div><div class="dt-tools">';
@@ -1485,8 +1514,14 @@ function drawDict(){
   drawStaff('dtStaff',dictItems(DT.inp),{key:cfg.key,ts:cfg.ts,barEvery:cfg.beats,nat:cfg.sanjo?SANJO_NAT[cfg.key]:null,beamGroups:cfg.beamGroups});
 }
 function setDur(d){DT.dur=d;drawDict();}
+function setKind(k){DT.kind=k;drawDict();}
 function setAcc(a){DT.acc=(DT.acc===a?'key':a);drawDict();}
 function dictTap(ev){
+  if(DT.cfg.rest&&DT.kind==='rest'){
+    DT.inp.push({n:null,d:DT.dur});
+    drawStaff('dtStaff',dictItems(DT.inp),{key:DT.cfg.key,ts:DT.cfg.ts,barEvery:DT.cfg.beats,nat:DT.cfg.sanjo?SANJO_NAT[DT.cfg.key]:null,beamGroups:DT.cfg.beamGroups});
+    return;
+  }
   var n;
   if(DT.cfg.rhythmOnly){n=pn('B4');}
   else{n=pitchAtY('dtStaff',ev.clientY,DT.acc||'key');}
@@ -1561,8 +1596,9 @@ function padBarEvery(){return PAD.ts[0]*(4/PAD.ts[1]);}
 function padLoad(){try{var v=JSON.parse(localStorage.getItem(PADKEY));if(v&&v.notes){PAD.key=v.key||'C';PAD.ts=v.ts||[4,4];PAD.bpm=v.bpm||96;PAD.jang=v.jang||'';PAD.notes=v.notes;}}catch(e){}}
 function padSave(){try{localStorage.setItem(PADKEY,JSON.stringify({key:PAD.key,ts:PAD.ts,bpm:PAD.bpm,jang:PAD.jang,notes:PAD.notes}));}catch(e){}}
 function openPad(){
+  stopAll();
   padLoad();
-  var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  var h='<button class="back" data-t="back" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
   h+='<div class="l-head">';
   h+='<div class="l-t">\uC790\uC720 \uAE30\uBCF4</div>';
   h+='<div id="padBody"></div>';
@@ -1586,7 +1622,8 @@ function drawPad(){
   h+='<button class="dt-t" data-t="pbpm-" onclick="padBpm(-8)">−</button>';
   h+='<button class="dt-t" data-t="pbpm+" onclick="padBpm(8)">+</button>';
   h+='<button class="dt-t" data-t="pplay" onclick="padPlay()">▶ 재생</button>';
-  h+='<button class="dt-t" data-t="pplayc" onclick="padPlay(true)">▶ 장단 같이</button></div>';
+  h+='<button class="dt-t" data-t="pplayc" onclick="padPlay(true)">▶ 장단 같이</button>';
+  h+='<button class="dt-t stop" data-t="pstop" onclick="stopAll()">■ 정지</button></div>';
 
   h+='<div class="dt-grp">모드</div><div class="pr-phase">';
   h+='<button class="dt-t'+(ed?'':' on')+'" data-t="pmadd" onclick="padMode(\'add\')">음 추가</button>';
@@ -1641,7 +1678,7 @@ function drawPad(){
     h+='<button class="dt-a" data-t="pclear" onclick="padClear()">전체 지우기</button>';
   }
   h+='</div>';
-  h+='<button class="backbtn" data-t="pback" onclick="goHome()">← 학습 지도로 돌아가기</button>';
+  h+='<button class="backbtn" data-t="pback" onclick="openMethod()">← 학습 지도로 돌아가기</button>';
   document.getElementById('padBody').innerHTML=h;
   drawStaff('padStaff',padItems(),{key:PAD.key,ts:PAD.ts,barEvery:padBarEvery(),nat:SANJO_NAT[PAD.key]||null});
 }
@@ -1776,7 +1813,8 @@ var PIECES=[
 ];
 var RP={pi:0,mi:0,inp:[],dur:1,acc:'key'};
 function openReal(){
-  var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  stopAll();
+  var h='<button class="back" data-t="back" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
   h+='<div class="l-head">';
   h+='<div class="l-t">\uAC00\uB77D \uCC44\uBCF4</div>';
   for(var i=0;i<PIECES.length;i++){
@@ -1784,7 +1822,7 @@ function openReal(){
     h+='<button class="stg'+(P.sanjo?' sanjo':'')+'" data-t="pc-'+P.id+'" onclick="openPiece('+i+')">'
       +'<div class="num">'+(i+1)+'</div><div class="txt"><div class="t">'+P.t+'</div></div><div class="chk">\u203A</div></button>';
   }
-  h+='<button class="backbtn" data-t="rback" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
+  h+='<button class="backbtn" data-t="rback" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
   document.getElementById('lessonBody').innerHTML=h;
   document.getElementById('home').style.display='none';
   document.getElementById('lesson').style.display='block';
@@ -1801,6 +1839,7 @@ function pieceAll(P){
   return out;
 }
 function openPiece(pi){
+  stopAll();
   RP.pi=pi;RP.mi=0;RP.inp=[];RP.dur=1;RP.acc='key';
   var P=PIECES[pi];
   var h='<button class="back" data-t="back" onclick="openReal()">\u2190 \uAC00\uB77D \uBAA9\uB85D</button>';
@@ -1816,7 +1855,8 @@ function drawPiece(){
   h+='<div class="dt-tools"><button class="dt-t on" data-t="rpm" onclick="rpPlay(1)">\u25B6 \uC774 \uB9C8\uB514</button>';
   h+='<button class="dt-t" data-t="rpmslow" onclick="rpPlay(0.6)">\u25B6 \uB290\uB9AC\uAC8C</button>';
   h+='<button class="dt-t" data-t="rpall" onclick="rpPlayAll()">\u25B6 \uC804\uCCB4</button>';
-  h+='<button class="dt-t" data-t="rpjang" onclick="rpPlay(1,true)">\u25B6 \uC7A5\uB2E8 \uAC19\uC774</button></div>';
+  h+='<button class="dt-t" data-t="rpjang" onclick="rpPlay(1,true)">\u25B6 \uC7A5\uB2E8 \uAC19\uC774</button>';
+  h+='<button class="dt-t stop" data-t="rpstop" onclick="stopAll()">■ 정지</button></div>';
   h+='<div class="dt-hint">\uC624\uC120\uC744 \uB20C\uB7EC \uC774 \uB9C8\uB514\uB97C \uBC1B\uC544\uC801\uC73C\uC138\uC694</div>';
   h+='<div class="staffbox tap" id="rpStaff" onclick="rpTap(event)"></div>';
   h+='<div class="dt-grp">\uAE38\uC774</div><div class="dt-tools">';
@@ -1893,32 +1933,102 @@ function rpCheck(){
   }
 }
 
-/* ══════ 채보법 (Method) ══════ */
-var METHOD=[{id:'m1',t:'\uB9AC\uB4EC\uC774 \uBA3C\uC800\uB2E4',lead:'\uC5F0\uAD6C\uAC00 \uC9DA\uB294 \uAC00\uC7A5 \uC57D\uD55C \uACE0\uB9AC. \uB9AC\uB4EC\uC774 \uD758\uB4E4\uB9AC\uBA74 \uC74C\uB192\uC774\uAE4C\uC9C0 \uBB34\uB108\uC9C4\uB2E4.',
- body:'<p>\uCC44\uBCF4 \uAD50\uC721 \uC5F0\uAD6C\uC5D0\uC11C \uBC18\uBCF5\uD574 \uB098\uC624\uB294 \uAD00\uCC30\uC774 \uC788\uC5B4\uC694 \u2014 \uD559\uC0DD\uB4E4\uC740 <b>\uC74C\uD45C\uB97C \uBC15\uC5D0 \uB9DE\uCDB0 \uBC30\uCE58\uD558\uB294 \uAC83</b>\uC744 \uC81C\uC77C \uC5B4\uB824\uC6CC\uD558\uACE0, \uAC70\uAE30\uC11C \uB2F9\uD669\uD558\uBA74 <b>\uC74C\uB192\uC774\uAE4C\uC9C0 \uD2C0\uB824\uBC84\uB824\uC694</b>. \uADF8\uB798\uC11C \uB9AC\uB4EC\uC744 \uBA3C\uC800 \uACE0\uC815\uD574\uC57C \uD574\uC694.</p>'
- +'<p><b>\uC810 \uACA9\uC790</b>\uB85C \uC2DC\uC791\uD558\uC138\uC694. \uBC15\uB9CC\uD07C \uC810\uC744 \uCC0D\uACE0 \uB9C8\uB514\uB97C \uB098\uB215\uB2C8\uB2E4. \uADF8 \uC704\uC5D0:</p>'
- +'<table class="ctbl"><tr><th>\uAE30\uD638</th><th>\uB73B</th></tr>'
- +'<tr><td>\uBE57\uAE08 /</td><td>\uC5EC\uAE30\uC11C \uC74C\uC774 <b>\uC2DC\uC791</b></td></tr>'
- +'<tr><td>\uAC00\uB85C\uC120 \u2014</td><td>\uC55E \uC74C\uC774 <b>\uC9C0\uC18D</b></td></tr>'
- +'<tr><td>\uB3D9\uADF8\uB77C\uBBF8 \u25CB</td><td><b>\uC27C\uD45C</b></td></tr></table>'
- +'<div class="cnote"><b>\uAE38\uC774\uBCF4\uB2E4 \uC2DC\uC791\uC810\u00B7 </b>\uCD5C\uADFC \uC81C\uC548\uB41C \uBC29\uC2DD\uC740 \uC74C\uC758 <b>\uAE38\uC774</b>\uAC00 \uC544\uB2C8\uB77C <b>\uC2DC\uC791\uC810</b>\uB9CC \uD45C\uC2DC\uD558\uAC8C \uD574\uC694. \uAE38\uC774\uB294 \uB2E4\uC74C \uC2DC\uC791\uC810\uAE4C\uC9C0\uB85C \uC800\uC808\uB85C \uACB0\uC815\uB418\uB2C8\uAE4C\uC694. \uD310\uB2E8\uD560 \uAC8C \uD558\uB098 \uC904\uC5B4\uB4ED\uB2C8\uB2E4.</div>'
- +'<p><b>\uBC18\uB4DC\uC2DC \uC190\uC73C\uB85C \uBC15\uC744 \uCE58\uAC70\uB098 \uC9C0\uD718\uD558\uBA74\uC11C</b> \uBC1B\uC544\uC801\uC73C\uC138\uC694. \uBC15\uC744 \uBAB8\uC73C\uB85C \uC7A1\uACE0 \uC788\uC5B4\uC57C \uC5B4\uB290 \uC74C\uC774 \uBC15 \uC704\uC5D0 \uC624\uACE0 \uC5B4\uB290 \uAC83\uC774 \uBC97\uC5B4\uB098\uB294\uC9C0 \uAD6C\uBCC4\uB3FC\uC694.</p>'
- +'<div class="cnote a"><b>\uAD6D\uC545\uC740 \uD2B9\uD788\u00B7 </b>\uC5F0\uAD6C\uB4E4\uC774 \uACF5\uD1B5\uC73C\uB85C \uC9DA\uB294 \uAC8C <b>\uBCF5\uD569\uBC15\uC790(3\uBD84\uBC15)\uC758 \uC5B4\uB824\uC6C0</b>\uC774\uC5D0\uC694. \uAD6D\uC545\uC740 \uB300\uBD80\uBD84 3\uBD84\uBC15\uC774\uB2C8, \uB4E3\uC790\uB9C8\uC790 <b>\uD55C \uBC15\uC774 \uB458\uB85C \uB098\uB258\uB294\uC9C0 \uC14B\uC73C\uB85C \uB098\uB258\uB294\uC9C0</b>\uBD80\uD130 \uD310\uB2E8\uD558\uB294 \uC2B5\uAD00\uC744 \uB4E4\uC5EC\uC57C \uD574\uC694.</div>'},
 
-{id:'m2',t:'\uC2E4\uC81C \uC74C\uC6D0\uC73C\uB85C \uCC44\uBCF4\uD558\uAE30',lead:'\uC885\uC774\u00B7\uC5F0\uD544\u00B7\uC7AC\uC0DD\uAE30\uB85C \uD558\uB294 \uC77C\uC758 \uC21C\uC11C.',
- body:'<p>\uC900\uBE44\uBD80\uD130. \uC7AC\uC0DD \uB3C4\uAD6C\uB294 <b>\uC74C\uC815\uC744 \uC720\uC9C0\uD55C \uCC44 \uB290\uB9AC\uAC8C</b>(50~70%) \uD560 \uC218 \uC788\uACE0 <b>\uAD6C\uAC04 \uBC18\uBCF5</b>\uC774 \uB418\uB294 \uAC78 \uACE0\uB974\uC138\uC694.</p>'
- +'<table class="ctbl"><tr><th></th><th>\uD560 \uC77C</th></tr>'+'<tr><td>1</td><td>\uC5F0\uD544 \uB193\uACE0 \uC804\uCCB4\uB97C \uB450\uC138 \uBC88 \uB4E3\uB294\uB2E4</td></tr>'+'<tr><td>2</td><td>\uAD6C\uC870\uB97C \uB098\uB214\uB2E4 \u2014 \uAD6D\uC545\uC740 \uC7A5\uB2E8 \uB2E8\uC704\uB85C</td></tr>'+'<tr><td>3</td><td>\uBC15\uC744 \uC9DA\uACE0 2\uBD84\uBC15\uC778\uC9C0 3\uBD84\uBC15\uC778\uC9C0 \uC815\uD55C\uB2E4</td></tr>'+'<tr><td>4</td><td>\uBC15\uC790\uD45C\uB97C \uC815\uD55C\uB2E4 (\uAD6D\uC545\uC740 \uC7A5\uB2E8\uACFC \uD15C\uD3EC\uB97C \uD568\uAED8)</td></tr>'+'<tr><td>5</td><td>\uD55C \uAD6C\uAC04\uC744 \uB290\uB9AC\uAC8C \uBC18\uBCF5\uD558\uBA70 \uC74C\uAC00 \uC5C6\uB294 \uAFB8\uBC08\uC744 \uAC78\uB7EC\uB0B8\uB2E4</td></tr>'+'<tr><td>6</td><td>\uD504\uB85C\uD1A0\uAE30\uBCF4\uB85C \uBC15 \uACA9\uC790\uC640 \uC2DC\uC791\uC810\uC744 \uC801\uB294\uB2E4</td></tr>'+'<tr><td>7</td><td>\uC73C\uB738\uC74C(\uBCF8\uCCAD)\uC744 \uCC3E\uB294\uB2E4</td></tr>'+'<tr><td>8</td><td>\uC2DC\uC791\uC810 \uC704\uC5D0 \uACC4\uC774\uB984·\uCCAD \uC774\uB984\uC744 \uC5B9\uB294\uB2E4</td></tr>'+'<tr><td>9</td><td>\uC624\uC120\uBCF4\uB85C \uC804\uD658\uD558\uACE0 \uAE30\uD638\uB97C \uC5B9\uB294\uB2E4</td></tr>'+'<tr><td>10</td><td>\uC6D0\uC74C\uACFC \uB098\uB780\uD788 \uB4E4\uC73C\uBA70 \uAC80\uC0B0\uD55C\uB2E4</td></tr></table>'+'<div class="cnote"><b>\uACE1 \uACE0\uB974\uAE30\u00B7 </b>\uC9C0\uAE08 \uC2E4\uB825\ubcf4\ub2e4 <b>\uC0B4\uC9DD \uC5B4\uB824\uC6B4</b> \uAC78 \uACE0\uB974\uC138\uC694. \uC545\uAE30 \uD558\uB098\uAC00 \uB69C\uB837\uC774 \uB4E4\uB9AC\uB294 \uB179\uC74C\uC774 \uC88B\uACE0, \uD569\uC8FC\uB294 \uB4A4\uB85C \uBBF8\uB8E8\uC138\uC694.</div>'}
+/* 손가락 짚기 그림 — n개(엄지부터) 활성 */
+function handSVG(n,cap){
+  var W=124,H=128;
+  var s='<svg viewBox="0 0 '+W+' '+H+'" width="112" height="116" style="display:block">';
+  var on='#3cc4a4', off='#2a3540', txt='#0a1013';
+  /* 손바닥 */
+  s+='<rect x="40" y="66" width="62" height="40" rx="12" fill="'+off+'"/>';
+  /* 검지 중지 약지 소지 */
+  var F=[[44,30,44,2],[59,20,54,3],[74,26,48,4],[89,38,36,0]];
+  for(var i=0;i<F.length;i++){
+    var f=F[i],act=(f[3]>0&&f[3]<=n);
+    s+='<rect x="'+f[0]+'" y="'+f[1]+'" width="11" height="'+f[2]+'" rx="5.5" fill="'+(act?on:off)+'"/>';
+    if(act)s+='<text x="'+(f[0]+5.5)+'" y="'+(f[1]+14)+'" text-anchor="middle" font-size="10" font-weight="700" fill="'+txt+'" font-family="ui-monospace,monospace">'+f[3]+'</text>';
+  }
+  /* 엄지 — 회전 후에도 캔버스 안에 들어오도록 배치 */
+  var t1=(n>=1);
+  s+='<g transform="rotate(-32 30 96)">';
+  s+='<rect x="24" y="60" width="12" height="38" rx="6" fill="'+(t1?on:off)+'"/>';
+  if(t1)s+='<text x="30" y="75" text-anchor="middle" font-size="10" font-weight="700" fill="'+txt+'" font-family="ui-monospace,monospace">1</text>';
+  s+='</g>';
+  if(cap)s+='<text x="'+(W/2)+'" y="124" text-anchor="middle" font-size="11" font-weight="700" fill="#a7b4bc">'+cap+'</text>';
+  return s+'</svg>';
+}
+function handRow(list){
+  var h='<div class="handrow">';
+  for(var i=0;i<list.length;i++)h+='<div class="handcell">'+handSVG(list[i][0],list[i][1])+'</div>';
+  return h+'</div>';
+}
+
+/* ══════ 채보법 (Method) ══════ */
+var METHOD=[{id:'m1',t:'리듬이 먼저다',lead:'박을 잡고 리듬을 고정한 뒤에 음을 올린다.',
+ body:'<table class="ctbl"><tr><th></th><th>할 일</th></tr>'
+ +'<tr><td><b>1</b></td><td>음악을 듣고 <b>한 마디가 몇 박</b>인지 파악한다</td></tr>'
+ +'<tr><td><b>2</b></td><td><b>박자표</b>를 정한다</td></tr>'
+ +'<tr><td><b>3</b></td><td>박자표에 따라 <b>엄지부터 손가락을 짚어가며</b> 강박과 리듬을 파악한다</td></tr>'
+ +'<tr><td><b>4</b></td><td>오선보 마디 위에 <b>연하게 리듬형만</b> 그려 놓는다</td></tr>'
+ +'<tr><td><b>5</b></td><td>그 리듬형에 맞춰 <b>음을 찾아</b> 마디 안에 그려 넣는다</td></tr>'
+ +'<tr><td><b>6</b></td><td>다시 들으면서 <b>검수</b>한다</td></tr></table>'
+ +'<div class="mh">3단계 — 손가락으로 박 짚기</div>'
+ +'<p>엄지가 <b>강박</b>입니다. 박 수만큼 손가락을 차례로 짚어요.</p>'
+ +handRow([[4,'4/4 · 12/8'],[3,'3/4 · 9/8'],[2,'2/4 · 6/8']])
+ +'<div class="cnote">8분음표 계열인데 <b>느릴 때</b>는 손가락 셋으로 <b>한 박 안을</b> 세어요. 박이 셋으로 나뉘는 걸 손으로 확인하는 겁니다.</div>'
+ +handRow([[3,'한 박 안 3분박']])
+ +'<div class="cnote"><b>4·5단계를 나누는 이유 · </b>리듬과 음을 동시에 잡으려 하면 둘 다 놓쳐요. 리듬형을 연필로 흐리게 깔아 두면 음을 찾을 <b>틀</b>이 생깁니다.</div>'},
+
+{id:'m2',t:'음을 찾아 넣기',lead:'리듬형이 깔렸으니 그 위에 음을 올린다.',
+ body:'<p>1번에서 박자표와 리듬형까지 끝냈어요. 이제 <b>무슨 음인지</b>를 정할 차례입니다.</p>'
+ +'<table class="ctbl"><tr><th></th><th>할 일</th></tr>'
+ +'<tr><td><b>1</b></td><td><b>으뜸음</b>을 찾는다 — 선율이 돌아와 쉬는 음, 대개 마지막 음</td></tr>'
+ +'<tr><td><b>2</b></td><td>그 으뜸음을 <b>오선 어디에 놓을지</b> 정한다</td></tr>'
+ +'<tr><td><b>3</b></td><td>곡에 쓰인 음을 모아 <b>음계</b>를 확인한다 — 어디에 반음이 있나</td></tr>'
+ +'<tr><td><b>4</b></td><td><b>조표</b>를 적는다</td></tr>'
+ +'<tr><td><b>5</b></td><td>각 음이 <b>앞 음에서 얼마나 움직였는지</b>로 판단한다</td></tr>'
+ +'<tr><td><b>6</b></td><td>깔아 둔 <b>리듬형 위에</b> 음을 얹는다</td></tr>'
+ +'<tr><td><b>7</b></td><td>조에 없는 음은 <b>임시표</b>로 적는다</td></tr></table>'
+
+ +'<div class="mh">5단계 — 판단 순서</div>'
+ +'<p>한 번에 음이름을 맞히려 하면 놓쳐요. <b>세 단계로 좁혀</b> 갑니다.</p>'
+ +'<table class="ctbl"><tr><th>순서</th><th>판단</th></tr>'
+ +'<tr><td><b>윤곽</b></td><td>올라갔나 내려갔나 제자리인가</td></tr>'
+ +'<tr><td><b>거리</b></td><td>옆 계단인가 건너뛰었나. 건너뛰었으면 몇 계단</td></tr>'
+ +'<tr><td><b>음이름</b></td><td>으뜸음에서 몇 번째인지 세어 이름을 붙인다</td></tr></table>'
+ +'<div class="cnote"><b>도약이 나오면 · </b>큰 도약은 대개 <b>으뜸화음</b>(1·3·5) 안에서 일어나요. 멀리 뛰었다 싶으면 이 셋부터 대 보세요.</div>'
+
+ +'<div class="mh">2단계 — 으뜸음을 어디에 놓나</div>'
+ +'<table class="ctbl"><tr><th>구분</th><th>기준</th></tr>'
+ +'<tr><td>서양음악</td><td>들리는 <b>실제 음높이</b>에 맞춘다</td></tr>'
+ +'<tr><td>국악</td><td><b>본청을 C로 고정</b>한다. 실음이 아니라 간격으로 적는다</td></tr></table>'
+ +'<div class="cnote a">국악은 악기와 연주자마다 실제 음높이가 달라요. 본청을 C로 두면 <b>어느 연주를 적어도 같은 모양</b>이 나와 구조를 비교할 수 있습니다.</div>'
+
+ +'<div class="mh">모르는 음은</div>'
+ +'<p><b>비워 두세요.</b> 틀린 추측을 적어 놓으면 그게 기준이 돼서 뒤가 다 어긋나요. 빈칸이 낫습니다. 한 구간을 반복해 들으며 확실한 음부터 채우고, 남은 자리를 좁혀 가세요.</p>'
+ +'<div class="cnote"><b>양끝부터 · </b>첫 음과 끝 음을 먼저 고정하면 가운데가 훨씬 쉬워져요. 끝 음은 대개 으뜸음입니다.</div>'}
 ];
 function openMethod(){
-  var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  stopAll();
+  var h='<button class="back" data-t="back" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
   h+='<div class="l-head">';
   h+='<div class="l-t">\uC5B4\uB5BB\uAC8C \uCC44\uBCF4\ud560 \uac83\uc778\uac00</div>';
-  h+='<div class="l-lead">오선지와 연필</div></div>';
+  h+='</div>';
+  h+='<div class="prep">'
+   +'<div><b>준비물</b> — 오선보, 연필</div>'
+   +'<div><b>준비</b> — 음원과 구간 반복, 느리게 재생 가능한 플레이어</div>'
+   +'<div><b>기본설정</b> — 높은음자리표(또는 낮은음자리표) 그려놓고 마디 줄 그어놓기</div></div>';
   for(var i=0;i<METHOD.length;i++){
     var M=METHOD[i];
     h+='<button class="stg" data-t="mt-'+M.id+'" onclick="openMethodPage('+i+')">'
       +'<div class="num">'+(i+1)+'</div><div class="txt"><div class="t">'+M.t+'</div></div><div class="chk">\u203A</div></button>';
   }
+  h+='<div class="map-h tool">실제 채보</div>';
+  h+='<button class="toolbtn" data-t="audio" onclick="openAudio()"><b>음원 구간 반복</b></button>';
+  h+='<button class="toolbtn" data-t="proto" onclick="openProto()"><b>프로토기보 연습</b></button>';
+  h+='<button class="toolbtn" data-t="pad" onclick="openPad()"><b>채보 노트</b></button>';
+  h+='<button class="toolbtn" data-t="real" onclick="openReal()"><b>가락 채보</b></button>';
+  h+='<button class="refbtn" data-t="ref" onclick="openRef(\'yul\')">참고 사전</button>';
   h+='<button class="backbtn" data-t="mback" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
   document.getElementById('lessonBody').innerHTML=h;
   document.getElementById('home').style.display='none';
@@ -2041,8 +2151,9 @@ function prSeq(){
   return seq;
 }
 function openProto(){
+  stopAll();
   PR.ans=null;
-  var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  var h='<button class="back" data-t="back" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
   h+='<div class="l-head">';
   h+='<div class="l-t">\uC911\uAC04 \uAE30\uBCF4 \uC5F0\uC2B5</div>';
   h+='<div id="prBody"></div>';
@@ -2066,7 +2177,8 @@ function drawProto(){
   h+='</div>';
   h+='<div class="dt-tools"><button class="dt-t on" data-t="prplay" onclick="prPlay()">\u25B6 \uB4E3\uAE30</button>';
   h+='<button class="dt-t" data-t="prslow" onclick="prPlay(0.6)">\u25B6 \uB290\uB9AC\uAC8C</button>';
-  h+='<button class="dt-t" data-t="prclick" onclick="prPlay(1,true)">\u25B6 \uBC15\uD45C \uAC19\uC774</button></div>';
+  h+='<button class="dt-t" data-t="prclick" onclick="prPlay(1,true)">\u25B6 \uBC15\uD45C \uAC19\uC774</button>';
+  h+='<button class="dt-t stop" data-t="prstop" onclick="stopAll()">■ 정지</button></div>';
   h+='<div class="pr-phase">';
   h+='<button class="dt-t'+(PR.phase==='rhythm'?' on':'')+'" data-t="prph1" onclick="prPhase(\'rhythm\')">1 \uB9AC\uB4EC</button>';
   h+='<button class="dt-t'+(PR.phase==='pitch'?' on':'')+'" data-t="prph2" onclick="prPhase(\'pitch\')">2 \uC74C\uB192\uC774</button></div>';
@@ -2087,7 +2199,7 @@ function drawProto(){
   h+='<button class="dt-a main" data-t="prcheck" onclick="prCheck()">\uCC44\uC810</button></div>';
   h+='<div class="dt-r" id="prR"></div><div class="dt-ans" id="prA"></div>';
   h+='<div class="dt-act"><button class="dt-a" data-t="prnew" onclick="prNew()">\u21BB \uC0C8 \uBB38\uC81C</button></div>';
-  h+='<button class="backbtn" data-t="prback" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
+  h+='<button class="backbtn" data-t="prback" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
   document.getElementById('prBody').innerHTML=h;
   prRender();
 }
@@ -2169,7 +2281,8 @@ function fmtT(s){
   return m+':'+(r<10?'0':'')+r.toFixed(1);
 }
 function openAudio(){
-  var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  stopAll();
+  var h='<button class="back" data-t="back" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
   h+='<div class="l-head">';
   h+='<div class="l-t">\uC74C\uC6D0 \uB4E3\uACE0 \uCC44\uBCF4\ud558\uae30</div>';
   h+='<div id="apBody"></div>';
@@ -2216,7 +2329,7 @@ function drawAudio(){
   h+='<span class="ap-bpm" id="apBpm">\u2669 = \u2014</span></div>';
   h+='<div class="dt-act"><button class="dt-a" data-t="apmark" onclick="apAddMark()">\uD83D\uDCCD \uAD6C\uAC04 \uC800\uC7A5</button></div>';
   h+='<div id="apMarks"></div>';
-  h+='<button class="backbtn" data-t="apback" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
+  h+='<button class="backbtn" data-t="apback" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
   document.getElementById('apBody').innerHTML=h;
   apBindCanvas();apRedraw();apMarksHtml();
 }
@@ -2568,6 +2681,7 @@ function renderHome(){
   document.getElementById('pS').textContent=s;
 }
 function openLesson(i){
+  stopAll();
   var c=CUR[i],dn=!!ST.done[c.id];
   DR.ok=0;DR.tot=0;
   var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
@@ -2577,6 +2691,7 @@ function openLesson(i){
   if(c.ex&&c.ex.length){
     h+='<div class="sec"><div class="sec-h"><div class="n'+(c.tr==='s'?' a':'')+'">2</div>\uADC0\uB85C \uD655\uC778</div><div class="cex"><div class="cex-t">\uD83C\uDFA7 \uB4E4\uC5B4\uBCF4\uAE30</div><div class="cex-btns">';
     for(var e=0;e<c.ex.length;e++)h+='<button class="cex-b" data-t="ex'+e+'" onclick="playEx('+i+','+e+');showEx('+i+','+e+')">'+c.ex[e][0]+'</button>';
+    h+='<button class="cex-b stop" data-t="exstop" onclick="stopAll()">\u25A0 \uC815\uC9C0</button>';
     h+='</div></div>';
     if(c.ex[0][1]!=='X'){
       h+='<div class="staffbox" id="exStaff"></div>';
@@ -2615,6 +2730,7 @@ function toggleDone(id){
   if(b){var dn=!!ST.done[id];b.className='donebtn'+(dn?' off':'');b.textContent=dn?'\u2713 \uC644\uB8CC\uD568 \u2014 \uD574\uC81C\ud558\uae30':'\uC774 \uB2E8\uACC4 \uC644\uB8CC';}
 }
 function goHome(){
+  stopAll();
   document.getElementById('lesson').style.display='none';
   document.getElementById('home').style.display='block';
   renderHome();window.scrollTo(0,0);
@@ -2628,15 +2744,15 @@ var REF={
  jang:[['\uC9C4\uC591','3\uBD84\uBC15 \u00B7 18/8 \u00B7 1\uB9C8\uB514 \u00B7 \uAC00\uC7A5 \uB290\uB9BC'],['\uC911\uBAA8\uB9AC','2\uBD84\uBC15 \u00B7 3/4 \u00B7 4\uB9C8\uB514 \u00B7 \uB290\uB9BC~\uC911\uAC04'],
   ['\uC911\uC911\uBAA8\uB9AC','3\uBD84\uBC15 \u00B7 12/8 \u00B7 1\uB9C8\uB514 \u00B7 \uC911\uAC04'],['\uC790\uC9C4\uBAA8\uB9AC','3\uBD84\uBC15 \u00B7 12/8 \u00B7 1\uB9C8\uB514 \u00B7 \uBE60\uB984'],
   ['\uD718\uBAA8\uB9AC','3\uBD84\uBC15 \u00B7 12/8 \u00B7 1\uB9C8\uB514 \u00B7 \uB354 \uBE60\uB984'],['\uC5C7\uBAA8\uB9AC','3+2+3+2 \u00B7 10/8 \u00B7 1\uB9C8\uB514 \u00B7 \uC5C7\uBC15'],],
- meter:[['\uB2E8\uC21C\uBC15\uC790(2\uBD84\uBC15)','\uBC15 = 4\uBD84\uC74C\uD45C, \uBC15\uC744 2\uB85C \uB098\uB214 \u00B7 2/4 3/4 4/4'],
-  ['\uBCF5\uD569\uBC15\uC790(3\uBD84\uBC15)','\uBC15 = \uC8104\uBD84\uC74C\uD45C, \uBC15\uC744 3\uC73C\uB85C \uB098\uB214 \u00B7 6/8 9/8 12/8'],
+ meter:[['2\uBD84\uBC15(2\uBD84\uBC15)','\uBC15 = 4\uBD84\uC74C\uD45C, \uBC15\uC744 2\uB85C \uB098\uB214 \u00B7 2/4 3/4 4/4'],
+  ['3\uBD84\uBC15(3\uBD84\uBC15)','\uBC15 = \uC8104\uBD84\uC74C\uD45C, \uBC15\uC744 3\uC73C\uB85C \uB098\uB214 \u00B7 6/8 9/8 12/8'],
   ['\uAC00\uC0B0\uBC15(\uBCC0\uBC15)','2\uC640 3\uC774 \uC11E\uC784 \u00B7 5/8 7/8 10/8'],
-  ['\uC14B\uC787\uB2E8','\uB2E8\uC21C\uBC15\uC790 \uC548\uC5D0\uC11C \uD55C \uBC15\uC744 3\uB4F1\uBD84 \u2014 3\uBD84\uBC15\uC73C\uB85C \uAC00\uB294 \uB2E4\uB9AC'],
+  ['\uC14B\uC787\uB2E8','2\uBD84\uBC15 \uC548\uC5D0\uC11C \uD55C \uBC15\uC744 3\uB4F1\uBD84 \u2014 3\uBD84\uBC15\uC73C\uB85C \uAC00\uB294 \uB2E4\uB9AC'],
   ['\uD5E4\uBBF8\uC62C\uB77C','3\uBC15 \uB450 \uB9C8\uB514(3+3)\uB97C 2\uBC15 \uC138 \uB369\uC5B4\uB9AC(2+2+2)\uB85C']],
  key:[['\u266F \uBD99\uB294 \uC21C\uC11C','\uD30C \uB3C4 \uC194 \uB808 \uB77C \uBBF8 \uC2DC (F C G D A E B)'],
   ['\u266D \uBD99\uB294 \uC21C\uC11C','\uC2DC \uBBF8 \uB77C \uB808 \uC194 \uB3C4 \uD30C (B E A D G C F)'],
-  ['\u266F\uC870 \uC73C\uB738\uC74C','\uB9C8\uC9C0\uB9C9 \u266F\uC758 \uBC18\uC74C \uC704'],['\u266D\uC870 \uC73C\uB738\uC74C','\uB9C8\uC9C0\uB9C9\uC5D0\uC11C \uB450 \uBC88\uC9F8 \u266D'],
-  ['\uB098\uB780\uD55C\uC870','\uC7A5\uC870\uC640 \uADF8 \uB2E83\uB3C4 \uC544\uB798 \uB2E8\uC870\uAC00 \uC870\uD45C \uACF5\uC720 (C\uC7A5 \u2194 a\uB2E8)'],
+  ['♯조 으뜸음','마지막 ♯ 하나 위'],['♭조 으뜸음','마지막 ♭ 바로 앞'],
+  ['나란한조','장조 이름에서 두 칸 아래가 나란한 단조 · 조표 공유 (C장 ↔ a단)'],
   ['\uC784\uC2DC\uD45C \uBC94\uC704','\uAC19\uC740 \uB9C8\uB514\u00B7\uAC19\uC740 \uB192\uC774\uC5D0\uC11C\uB9CC \uC720\uD6A8. \uB9C8\uB514\uC120 \uB118\uC73C\uBA74 \uD574\uC81C']],
  intv:[['\uB2E82\uB3C4','1\uBC18\uC74C'],['\uC7A52\uB3C4','2\uBC18\uC74C'],['\uB2E83\uB3C4','3\uBC18\uC74C'],['\uC7A53\uB3C4','4\uBC18\uC74C'],
   ['\uC644\uC8044\uB3C4','5\uBC18\uC74C'],['\uC99D4\uB3C4','6\uBC18\uC74C'],['\uC644\uC8045\uB3C4','7\uBC18\uC74C'],
@@ -2672,7 +2788,8 @@ var REF={
 var REFTABS=[['yul','\uC728\uBA85'],['jang','\uC7A5\uB2E8'],['meter','\uBC15\uC790\uD45C'],['key','\uC870\uD45C'],['intv','\uC74C\uC815'],['sig','\uC0B0\uC870 \uCCAD'],['sym','\uAE30\uD638'],['proc','\uCC44\uBCF4 \uC808\uCC28']];
 var YULMODE='jeongak';
 function openRef(k){
-  var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  stopAll();
+  var h='<button class="back" data-t="back" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
   h+='<div class="l-head"><div class="l-t">\uC728\uBA85 \u00B7 \uC7A5\uB2E8 \u00B7 \uC74C\uC815 \u00B7 \uAE30\uD638</div>';
   h+='</div>';
   h+='<div class="ref-nav">';
