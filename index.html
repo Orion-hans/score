@@ -247,7 +247,7 @@ header .sub{font-size:.76rem;color:var(--muted);font-family:var(--mono);font-wei
     <div class="prog">
       <div class="prog-top">
         <div class="prog-pct" id="pPct">0<small>%</small></div>
-        <div class="prog-stats"><span>완료 <b id="pDone">0</b>/21</span><span>서양 <b id="pW">0</b>/16</span><span>산조 <b id="pS">0</b>/5</span></div>
+        <div class="prog-stats"><span>완료 <b id="pDone">0</b>/22</span><span>서양 <b id="pW">0</b>/17</span><span>산조 <b id="pS">0</b>/5</span></div>
       </div>
       <div class="bar"><i id="pBar" style="width:0%"></i></div>
     </div>
@@ -348,17 +348,21 @@ function tone(m,t0,dur,g,vol){
     nb.start(t);nb.stop(t+dur);
   }
 }
-function click(t0,strong){
+/* lv 0=약, 1=묶음 첫박, 2=마디 첫박 */
+function click(t0,lv){
   var a=ac();if(!a)return;var t=a.currentTime+t0;
-  var o=a.createOscillator();o.type='square';o.frequency.value=strong?1500:1000;
-  var gn=a.createGain();gn.gain.setValueAtTime(strong?0.14:0.07,t);
-  gn.gain.exponentialRampToValueAtTime(0.0001,t+0.05);
-  o.connect(gn);gn.connect(master());o.start(t);o.stop(t+0.06);
+  var L=(lv===true)?2:(lv|0);
+  var f=[900,1400,2100][L]||900;
+  var g=[0.06,0.11,0.20][L]||0.06;
+  var o=a.createOscillator();o.type='square';o.frequency.value=f;
+  var gn=a.createGain();gn.gain.setValueAtTime(g,t);
+  gn.gain.exponentialRampToValueAtTime(0.0001,t+(L===2?0.08:0.05));
+  o.connect(gn);gn.connect(master());o.start(t);o.stop(t+0.09);
 }
 /* 선율 재생: seq = [{n:noteObj|null, d:dur(4분=1), g:시김새}] , bpm 기준 4분음표 */
 var PLAYING=[];
 function playSeq(seq,bpm,withClick,beatsPerBar,beatUnit,groups,countIn){
-  ac();
+  stopAll();ac();
   var sp=60/(bpm||96),bu=beatUnit||1,per=beatsPerBar||4;
   var n0=countIn?(countIn===true?per:countIn):0;
   var lead=n0*bu*sp;
@@ -378,7 +382,7 @@ function metro(t0,totalQ,spQ,beatUnit,beatsPerBar,groups){
   if(groups&&groups.length){
     var u=0.5,pos=0,gi=0,si=0;
     while(pos<totalQ-0.0001){
-      click(t0+pos*spQ,(si===0&&gi===0));
+      click(t0+pos*spQ, si!==0?0:(gi===0?2:1));
       si++;
       if(si>=groups[gi]){si=0;gi=(gi+1)%groups.length;}
       pos+=u;
@@ -387,7 +391,7 @@ function metro(t0,totalQ,spQ,beatUnit,beatsPerBar,groups){
   }
   var bu=beatUnit||1, per=Math.max(1,Math.round(beatsPerBar||4)), k=0;
   for(var pos2=0;pos2<totalQ-0.0001;pos2+=bu){
-    click(t0+pos2*spQ,k%per===0);k++;
+    click(t0+pos2*spQ,k%per===0?2:0);k++;
   }
 }
 function playNotes(arr,bpm,d){var s=[];for(var i=0;i<arr.length;i++)s.push({n:arr[i],d:(d||1)});return playSeq(s,bpm||100);}
@@ -478,6 +482,13 @@ function drawStaff(host,items,opt){
         }
       }
       if(sp[1]){try{note.addModifier(new VF.Dot(),0);}catch(e){try{VF.Dot.buildAndAttach([note]);}catch(e2){}}}
+      if(it.art){
+        try{
+          var ar=new VF.Articulation(it.art);
+          ar.setPosition(VF.Modifier.Position.ABOVE);
+          note.addModifier(ar,0);
+        }catch(ea2){}
+      }
       if(it.cls){
         var col=it.cls==='ok'?'#1f9e7a':(it.cls==='sel'?'#1565c0':'#d9503c');
         note.setStyle({fillStyle:col,strokeStyle:col});
@@ -593,6 +604,15 @@ function keyScale(keyName,tonicLet,oct){
   }
   return out;
 }
+/* 조 이름 → 음계 문자열 배열 (받아쓰기 pool 용) */
+function keyPoolNames(keyName,oct){
+  var t=keyName[0], sc=keyScale(keyName,t,oct||4), out=[];
+  for(var i=0;i<sc.length;i++){
+    var n=sc[i];
+    out.push(n.let+(n.acc<0?'b':n.acc>0?'#':'')+n.oct);
+  }
+  return out;
+}
 /* 온음계 한 칸 이동 */
 function stepNote(n,dir,key,nat){
   var dn=dnumOf(n)+dir;
@@ -637,8 +657,7 @@ var CUR=[
  +'<div class="cnote"><b>둘 중 어느 쪽인지는 \u00B7 </b><b>끝나는 음</b>을 보세요. 두 후보 중 <b>끝음과 이름이 같은 쪽</b>이 답입니다. E\u266D로 끝나면 E\u266D장조, C로 끝나면 c단조.</div>'
  +'<p>첫 마디도 같이 보면 더 확실해요. 곡은 대개 으뜸음에서 시작해 으뜸음으로 끝납니다.</p>',
  ex:[['C장조 \u2014 C로 끝남','C4 E4 G4 E4 C4'],['a단조 \u2014 A로 끝남','A4 C5 E5 C5 A4'],['E\u266D장조 음계','Eb4 F4 G4 Ab4 Bb4 C5 D5 Eb5'],['D장조 음계','D4 E4 F#4 G4 A4 B4 C#5 D5']],
- drill:{type:'tonicsig'},
- dict:{key:'C',ts:[4,4],tsPool:[[2,4],[3,4],[4,4]],bpm:84,pool:['B4'],durs:[0.5,1,1.5,2],beats:4,rest:true,rhythmOnly:true}},
+ drill:{type:'tonicsig'}},
 
 {id:'w3',tr:'w',n:3,t:'강박과 박자표',lead:'무게가 실리는 곳이 마디의 시작. 박 수를 세면 박자표가 나온다.',
  concept:'<p>박은 균등하지만 <b>무게는 균등하지 않아요</b>. 주기적으로 힘이 실리는 박이 있고, 그게 <b>강박</b> = 마디의 첫 박이에요.</p>'
@@ -665,7 +684,7 @@ var CUR=[
  ex:[['2분박','X'],['3분박','X'],['2분박 빠르게','X'],['3분박 빠르게','X']],
  exDiv:[2,3,2,3],exDivBpm:[76,76,132,132],
  drill:{type:'division'},
- dict:{key:'C',ts:[4,4],bpm:84,pool:['B4'],durs:[0.5,1,2],beats:4,rhythmOnly:true}},
+ dict:{key:'C',ts:[4,4],tsPool:[[2,4],[3,4],[4,4],[6,8],[9,8],[12,8]],bpm:84,pool:['B4'],durs:[0.5,1,1.5,2],beats:4,rhythmOnly:true}},
 
 {id:'w5',tr:'w',n:5,t:'음가와 쉼표',lead:'각 음이 몇 박을 차지하나. 쉼표도 음가다.',
  concept:'<p><b>음가</b>는 음이 차지하는 길이예요. 박을 기준으로 잽니다.</p>'
@@ -710,7 +729,7 @@ var CUR=[
  drill:{type:'rhythmpat'},
  dict:{key:'C',ts:[4,4],bpm:84,pool:['B4'],durs:[0.25,0.5,0.75,1,1.5,2],beats:4,rest:true,rhythmOnly:true}},
 
-{id:'w8',tr:'w',n:8,t:'3분박 받아쓰기',lead:'3분박 세계. 6/8 · 9/8 · 12/8과 셋잇단.',
+{id:'w8',tr:'w',n:8,t:'3분박 받아쓰기',lead:'박이 셋으로 나뉘는 세계. 6/8 · 9/8 · 12/8.',
  concept:'<p>3분박을 실제로 받아써요. 국악 채보의 토대입니다.</p>'
  +'<table class="ctbl"><tr><th>박자표</th><th>점4분 박</th><th>8분음표</th></tr>'
  +'<tr><td>6/8</td><td>2박</td><td>6개</td></tr>'
@@ -722,10 +741,9 @@ var CUR=[
  +'<tr><td>8분 3개</td><td>고르게 셋</td></tr>'
  +'<tr><td>4분 + 8분</td><td>길게-짧게</td></tr>'
  +'<tr><td>8분 + 4분</td><td>짧게-길게</td></tr></table>'
- +'<p><b>셋잇단음표</b>는 반대 방향이에요 \u2014 2분박 안에서 한 박을 셋으로 빌려 쪼갭니다. 3분박을 미리 맛보는 다리죠.</p>'
  +'<div class="cnote a"><b>국악 리듬형 · </b>점4분 한 박 안에서 8분·16분 조합이 자주 나와요. 절대적이진 않지만 익혀두면 빨리 잡힙니다.</div>',
- ex:[['6/8','X'],['12/8','X'],['셋잇단 (4/4 안에서)','X']],
- exCompound:[[6,8,72],[12,8,76],[4,4,'trip']],
+ ex:[['6/8','X'],['9/8','X'],['12/8','X']],
+ exCompound:[[6,8,72],[9,8,74],[12,8,76]],
  drill:{type:'compound'},
  dict:{key:'C',ts:[12,8],bpm:74,pool:['B4'],durs:[0.5,1,1.5],beats:6,unit:0.5,rest:true,rhythmOnly:true}},
 
@@ -740,7 +758,7 @@ var CUR=[
  +'<p>먼저 <b>윤곽</b>부터 들으세요. 정확한 음보다 <b>오르나 내리나 제자리인가</b>가 먼저입니다.</p>'
  +'<div class="cnote"><b>순서 · </b>윤곽 → 도수 → 음이름. 처음부터 정확한 음을 잡으려 하면 다 놓쳐요.</div>',
  ex:[['도 레 미','C4 D4 E4'],['미 레 도','E4 D4 C4'],['도 미 레 도','C4 E4 D4 C4']],
- drill:{type:'contour'},
+ drill:{type:'notename'},
  dict:{key:'C',ts:[4,4],bpm:80,pool:['C4','D4','E4'],durs:[1,2],beats:4,labels:true}},
 
 {id:'w10',tr:'w',n:10,t:'온음계 · 순차와 도약',lead:'도에서 높은 도까지. 옆 계단인가 건너뜀인가.',
@@ -794,8 +812,9 @@ var CUR=[
  +'<tr><td>4</td><td>E</td><td>c\u266F</td></tr></table>'
  +'<div class="cnote">장조와 나란한 단조는 <b>조표를 공유</b>해요. 구별은 끝나는 음으로.</div>',
  ex:[['G장조 음계','G4 A4 B4 C5 D5 E5 F#5 G5'],['F장조 음계','F4 G4 A4 Bb4 C5 D5 E5 F5'],['B\u266D장조 음계','Bb4 C5 D5 Eb5 F5 G5 A5 Bb5']],
+ exKey:['G','F','Bb'],
  drill:{type:'keysig'},
- dict:{key:'G',ts:[4,4],bpm:90,pool:['G4','A4','B4','C5','D5','E5','F#5'],durs:[0.5,1,1.5,2],beats:4}},
+ dict:{key:'G',keyPool:['G','D','F','Bb','Eb'],ts:[4,4],bpm:90,pool:['G4','A4','B4','C5','D5','E5','F#5'],durs:[0.5,1,1.5,2],beats:4}},
 
 {id:'w13',tr:'w',n:13,t:'임시표',lead:'조 밖의 반음. 마디 안에서만 살아 있다.',
  concept:'<p><b>임시표</b>는 조표에 없는 반음이에요. 그 순간만 음을 올리거나 내립니다.</p>'
@@ -816,23 +835,50 @@ var CUR=[
  +'<div class="cnote"><b>거꾸로 하면 무너져요 · </b>음높이부터 잡으면 음가를 배치할 틀이 없어 흔들려요. 리듬이 먼저 서 있어야 합니다.</div>'
  +'<p>청취마다 목표를 하나만 잡으세요.</p>',
  ex:[['짧은 프레이즈 1','C4 E4 G4 E4 D4 C4'],['짧은 프레이즈 2','G4 F4 E4 D4 C4']],
- drill:{type:'division'},
- dict:{key:'C',ts:[4,4],bpm:84,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.5,1,1.5,2],beats:4,rest:true,bars:2}},
+ drill:{type:'integrate'},
+ dict:{key:'C',keyPool:['C','G','F'],ts:[4,4],tsPool:[[3,4],[4,4],[6,8]],bpm:84,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.5,1,1.5,2],beats:4,rest:true}},
 
-{id:'w15',tr:'w',n:15,t:'변박과 헤미올라',lead:'2와 3이 섞이는 박자. 묶음이 바뀌는 착청.',
- concept:'<p><b>가산박(변박)</b>은 2와 3이 섞여 한 마디를 이뤄요.</p>'
- +'<table class="ctbl"><tr><th>박자표</th><th>묶음</th></tr>'
- +'<tr><td>5/8</td><td>3+2 또는 2+3</td></tr>'
- +'<tr><td>7/8</td><td>3+2+2 등</td></tr>'
- +'<tr><td>10/8</td><td>3+2+3+2 (엇모리)</td></tr></table>'
- +'<p><b>헤미올라</b>는 같은 시간을 다르게 묶는 착청이에요. 3박 두 마디(3+3)를 2박 세 덩어리(2+2+2)로 재해석합니다.</p>'
- +'<div class="cnote"><b>채보 요령 · </b>변박은 <b>강박 간격을 세어</b> 묶음을 찾으세요. 3+2인지 2+3인지가 곧 마디 구조예요.</div>',
- ex:[['5/8 (3+2)','X'],['7/8 (3+2+2)','X'],['10/8 (3+2+3+2)','X']],
- exGroup:[[3,2],[3,2,2],[3,2,3,2]],
+{id:'w15',tr:'w',n:15,t:'혼합박자',lead:'2와 3이 섞여 한 마디를 이룬다.',
+ concept:'<p>지금까지 박은 전부 <b>같은 크기</b>였어요. <b>혼합박자</b>는 한 마디 안에서 <b>2와 3이 섞입니다</b>.</p>'
+ +'<table class="ctbl"><tr><th>박자표</th><th>묶음</th><th>느낌</th></tr>'
+ +'<tr><td>5/8</td><td><b>3+2</b> 또는 2+3</td><td>긴 박 하나 + 짧은 박 하나</td></tr>'
+ +'<tr><td>7/8</td><td>3+2+2 · 2+2+3 등</td><td>묶는 방식이 곡마다 다름</td></tr>'
+ +'<tr><td>10/8</td><td><b>3+2+3+2</b></td><td>엇모리</td></tr></table>'
+ +'<p>8분음표 수는 같아도 <b>어떻게 묶느냐</b>가 다르면 완전히 다른 박자예요. 5/8의 3+2와 2+3은 강박 자리가 달라요.</p>'
+ +'<div class="cnote"><b>듣고 찾는 법 · </b>가장 센 자리가 <b>마디 첫 박</b>이에요. 거기서 다음 센 자리까지 8분음표를 세면 첫 묶음 크기가 나오고, 그 다음이 두 번째 묶음이에요. 3+2인지 2+3인지는 <b>첫 묶음이 긴가 짧은가</b>로 갈려요.</div>'
+ +'<div class="cnote a"><b>엇모리 · </b>국악의 10/8 엇모리가 <b>3+2+3+2</b>예요. 긴-짧-긴-짧이 반복돼 특유의 절뚝이는 걸음이 나옵니다.</div>'
+ +'<p>기보할 때는 <b>묶음대로 꼬리를 이어야</b> 읽는 사람이 강박을 알 수 있어요. 5/8을 3+2로 묶었으면 8분음표 셋, 둘로 나눠 이어붙입니다.</p>',
+ ex:[['5/8 (3+2)','X'],['5/8 (2+3)','X'],['7/8 (3+2+2)','X'],['10/8 엇모리 (3+2+3+2)','X']],
+ exGroup:[[3,2],[2,3],[3,2,2],[3,2,3,2]],
  drill:{type:'addmeter'},
  dict:{key:'C',ts:[5,8],bpm:78,pool:['C4','D4','E4','F4','G4'],durs:[0.5,1,1.5],beats:2.5,groups:[3,2],beamGroups:[[3,8],[2,8]]}},
 
-{id:'w16',tr:'w',n:16,t:'표현까지',lead:'아티큘레이션은 음가를 안 바꾼다. 마지막에 얹는다.',
+{id:'w16',tr:'w',n:16,t:'잇단음표와 헤미올라',lead:'박자표는 그대로인데 리듬만 달라진다.',
+ concept:'<p>둘 다 <b>박자표를 바꾸지 않아요</b>. 박자표는 그대로 두고 <b>리듬형만</b> 달라집니다. 그래서 앞의 박자표 이야기와는 다른 층위예요.</p>'
+ +'<div class="mh">잇단음표 — 박을 다르게 쪼갠다</div>'
+ +'<p>박자표가 정한 것과 <b>다른 수로</b> 한 박을 나누는 것이에요.</p>'
+ +'<table class="ctbl"><tr><th>이름</th><th>내용</th><th>어디서</th></tr>'
+ +'<tr><td><b>셋잇단</b></td><td>보통 2로 나뉠 박을 <b>3</b>으로</td><td>2분박 (4/4 등)</td></tr>'
+ +'<tr><td><b>두잇단</b></td><td>보통 3으로 나뉠 박을 <b>2</b>로</td><td>3분박 (6/8 등)</td></tr>'
+ +'<tr><td><b>5잇단</b></td><td>한 박을 <b>5</b>로 고르게</td><td>어디서나</td></tr>'
+ +'<tr><td><b>7잇단</b></td><td>한 박을 <b>7</b>로 고르게</td><td>어디서나</td></tr></table>'
+ +'<p>셋잇단과 두잇단은 <b>서로 빌려온</b> 것이에요 — 2분박이 3분박의 분할을, 3분박이 2분박의 분할을 잠깐 빌려 씁니다. 5잇단·7잇단은 어느 쪽에도 없는 수라 그냥 <b>고르게 나눈</b> 것이고요.</p>'
+ +'<div class="cnote"><b>표기 · </b>묶음 위에 숫자를 적어요. 3, 5, 7. 숫자가 없으면 박자표가 정한 대로 나뉜다는 뜻입니다.</div>'
+ +'<div class="cnote"><b>듣는 법 · </b>박은 그대로 유지되는데 <b>그 안이 평소보다 촘촘하거나 성글어요</b>. 4/4에서 셋잇단은 8분음표보다 조금 빠르고 16분음표보다 느립니다. 박을 손으로 치면서 그 사이에 몇 개가 들어가는지 세세요.</div>'
+ +'<div class="mh">헤미올라 — 박을 다르게 묶는다</div>'
+ +'<p>쪼개는 게 아니라 <b>묶는</b> 문제예요. 3:2 비율이고, 어원이 그리스어로 "한 배 반"입니다.</p>'
+ +'<table class="ctbl"><tr><th>원래</th><th>헤미올라</th></tr>'
+ +'<tr><td>6/8 = <b>3+3</b> (둘씩 묶인 큰 박 2개)</td><td><b>2+2+2</b>로 들림 (3/4 처럼)</td></tr>'
+ +'<tr><td>3/4 두 마디 = 3+3</td><td>2+2+2 로 들림</td></tr></table>'
+ +'<p>8분음표 <b>여섯 개는 그대로</b>인데 강세 자리만 옮겨져요. 그래서 박자표를 바꾸지 않고도 박이 바뀐 것처럼 들립니다.</p>'
+ +'<div class="cnote"><b>어디에 쓰나 · </b>바로크 음악의 <b>종지</b> 직전, 왈츠, 라틴 음악에 자주 나와요. 잠깐 걸렸다가 원래 박으로 돌아옵니다 \u2014 계속 그렇게 들리면 그건 헤미올라가 아니라 박자표를 잘못 적은 거예요.</div>'
+ +'<div class="cnote"><b>채보할 때 · </b>몇 마디 동안만 강세가 어긋나면 <b>박자표는 그대로 두고</b> 그 자리에 강세나 이음줄로 적으세요. 박자표를 바꾸면 안 됩니다.</div>',
+ ex:[['4/4 기본 (8분음표)','X'],['4/4 셋잇단','X'],['4/4 5잇단','X'],['6/8 기본 (3+3)','X'],['6/8 헤미올라 (2+2+2)','X']],
+ exTuplet:[[4,4,2],[4,4,3],[4,4,5],[6,8,'norm'],[6,8,'hemi']],
+ drill:{type:'tuplet'},
+ dict:{key:'C',ts:[4,4],bpm:84,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.5,1,1.5,2],beats:4,rest:true}},
+
+{id:'w17',tr:'w',n:17,t:'표현까지',lead:'아티큘레이션은 음가를 안 바꾼다. 마지막에 얹는다.',
  concept:'<p><b>아티큘레이션</b>은 음을 어떻게 소리 내는가예요. 음높이도 음가도 바꾸지 않아요.</p>'
  +'<table class="ctbl"><tr><th>기호</th><th>이름</th><th>소리</th></tr>'
  +'<tr><td>.</td><td>스타카토</td><td>짧게 끊어</td></tr>'
@@ -843,8 +889,10 @@ var CUR=[
  +'<p>전 과정 순서 \u2014 박 → 분박 → 박자표 → 꾸밈 걸러내기 → 리듬 골격 → 으뜸음 → 음높이 → 기호 → 검산.</p>',
  ex:[['레가토','C4 D4 E4 F4 G4'],['스타카토','C4 D4 E4 F4 G4'],['악센트 (첫 음)','C4 D4 E4 F4 G4']],
  exArtic:['legato','stacc','accent'],
+ exKey:['C','C','C'],
+ exArt:[null,{all:'a.'},{first:'a>'}],
  drill:{type:'artic'},
- dict:{key:'G',ts:[4,4],bpm:92,pool:['G4','A4','B4','C5','D5','E5','F#5','G5'],durs:[0.25,0.5,1,1.5,2],beats:4,bars:2}},
+ dict:{key:'C',ts:[4,4],bpm:92,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.25,0.5,1,1.5,2],beats:4,bars:2}},
 
 /* ── 산조 트랙 — 장단이 먼저 ── */
 {id:'s1',tr:'s',n:1,t:'장단과 박자표',lead:'산조 채보의 첫 단계. 장단이 박자표와 템포를 정한다.',
@@ -899,7 +947,7 @@ var CUR=[
  +'<p>기호로 <b>표시</b>하는 건 7번입니다. 판별은 앞, 표기는 뒤예요.</p>',
  ex:[['산조 프레이즈 1','C4 Eb4 F4 G4 F4 Eb4 D4 C4'],['산조 프레이즈 2','G4 Bb4 C5 Bb4 A4 G4 F4 G4']],
  sanjo:true,
- drill:{type:'cheong2'},
+ drill:{type:'sigim'},
  dict:{key:'Eb',ts:[12,8],bpm:84,pool:['C4','D4','Eb4','F4','G4','A4n','Bb4','C5'],durs:[0.5,1,1.5,3],beats:6,unit:0.5,sanjo:true,bars:2}},
 
 {id:'s5',tr:'s',n:5,t:'변청 — 조옮김',lead:'본청이 옮겨가도 청 사이 간격은 그대로.',
@@ -945,7 +993,7 @@ function contourSVG(p){
 }
 /* ══ 예시 재생 ══ */
 function playEx(si,ei){
-  var st=CUR[si];ac();
+  var st=CUR[si];stopAll();ac();
   if(st.exSigim&&st.exSigim[ei]){
     var g=st.exSigim[ei];
     if(g==='bend1'){tone(midiOf(pn('D4')),0.08,1.9,{type:'bend',from:midiOf(pn('Eb4'))});}
@@ -978,6 +1026,13 @@ function playEx(si,ei){
       click(t5,d5===0&&b5===0);
       tone(midiOf(pn('G4')),t5,sp5/3*0.8);t5+=sp5/3;}
     return;}
+  if(st.exTuplet){
+    var E=st.exTuplet[ei];
+    if(E[2]==='hemi'||E[2]==='norm'){
+      drillPlay({hemi:E[2]==='hemi'});return;
+    }
+    drillPlay({tup:E[2]});return;
+  }
   if(st.exGroup){var g=st.exGroup[ei],u=0.21,t6=0.1;
     for(var r6=0;r6<3;r6++)for(var gi=0;gi<g.length;gi++)for(var s6=0;s6<g[gi];s6++){
       click(t6,s6===0);t6+=u;}
@@ -1039,7 +1094,7 @@ function playJangdan(k,reps){
 }
 
 /* ══ 드릴 ══ */
-var DR={cur:null,ok:0,tot:0,si:0};
+var DR={cur:null,ok:0,tot:0,si:0,hist:[],hi:-1};
 var SANJO_CHEONG=[['C','\uBCF8\uCCAD'],['D','\uAEBE\uB294\uCCAD'],['Eb','\uAEBE\uAE30 \uC804 \uC74C'],['F','\uD758\uB9AC\uB294\uCCAD'],['G','\uB5A0\uB294\uCCAD'],['A','\uC717\uAEBE\uB294\uCCAD'],['Bb','\uB354\uC74C\uCCAD']];
 
 function genDrill(type){
@@ -1093,6 +1148,65 @@ function genDrill(type){
       exp:(S.k==='C'?'조표 없음':(sigKind(S.k)<0?'마지막 ♭ 바로 앞':'마지막 ♯ 하나 위'))
         +' → '+S.maj+'장조 / 나란한 '+S.min+'단조. 끝음 '+nm(mel[mel.length-1])+' → '+ansName};
   }
+  if(type==='notename'){
+    var LET7=['C','D','E','F','G','A','B'];
+    var oc3=pick([4,5]), li=rnd(7);
+    if(oc3===5&&li>0){oc3=4;}
+    var n3={let:LET7[li],oct:oc3,acc:0};
+    var ansL=LET7[li];
+    var op3=shuf(LET7).slice(0,4);
+    if(op3.indexOf(ansL)<0)op3[0]=ansL;
+    op3=shuf(op3);
+    return{q:'오선 위 이 음의 이름은?',
+      plays:[['듣기',[{n:n3,d:1.1}]]],
+      staff:{items:[{n:n3,d:2}],opt:{key:'C',labels:false}},
+      opts:op3,ans:op3.indexOf(ansL),
+      exp:ansL+' — '+(li%2===0?'줄':'칸')+' 자리'};
+  }
+  if(type==='integrate'){
+    var TS=[[[2,4],'2/4',1,2],[[3,4],'3/4',1,3],[[4,4],'4/4',1,4],
+            [[6,8],'6/8',1.5,2],[[9,8],'9/8',1.5,3],[[12,8],'12/8',1.5,4]];
+    var T=pick(TS);
+    var mode2=rnd(2);
+    if(mode2===0){
+      var op4=shuf(TS.map(function(x){return x[1];})).slice(0,4);
+      if(op4.indexOf(T[1])<0)op4[0]=T[1];
+      op4=shuf(op4);
+      return{q:'박 분할과 박 수를 함께 판단하세요. 박자표는?',
+        plays:[['듣기',{full:{beats:T[3],bu:T[2]}}]],
+        opts:op4,ans:op4.indexOf(T[1]),
+        exp:(T[2]===1.5?'3분박':'2분박')+' · '+T[3]+'박 → '+T[1]};
+    }
+    var SG=[['C','C장조'],['G','G장조'],['F','F장조'],['Bb','B♭장조'],['Eb','E♭장조']];
+    var S2=pick(SG);
+    var sc2=keyScale(S2[0],S2[0][0],4);
+    var mel2=[sc2[0],sc2[2],sc2[4],sc2[2],sc2[0]];
+    var op5=shuf(SG.map(function(x){return x[1];})).slice(0,4);
+    if(op5.indexOf(S2[1])<0)op5[0]=S2[1];
+    op5=shuf(op5);
+    return{q:'조표를 보고 조를 판단하세요.',
+      plays:[['듣기',seqOf(mel2,0.55)]],
+      staff:{items:mel2.map(function(n){return {n:n,d:1};}),opt:{key:S2[0],labels:false}},
+      opts:op5,ans:op5.indexOf(S2[1]),exp:S2[1]};
+  }
+  if(type==='tuplet'){
+    var mode3=rnd(2);
+    if(mode3===0){
+      var TP=[[2,'보통 (8분 2개)'],[3,'셋잇단 (3개)'],[5,'5잇단 (5개)'],[7,'7잇단 (7개)']];
+      var T2=pick(TP);
+      var op6=TP.map(function(x){return x[1];});
+      return{q:'한 박이 몇으로 나뉘나요? 박은 그대로예요.',
+        plays:[['듣기',{tup:T2[0]}]],
+        opts:op6,ans:op6.indexOf(T2[1]),
+        exp:T2[1]+' — 박자표는 4/4 그대로'};
+    }
+    var isH=rnd(2)===0;
+    return{q:'6/8 그대로인가요, 헤미올라(2+2+2)인가요?',
+      plays:[['듣기',{hemi:isH}]],
+      opts:['6/8 그대로 (3+3)','헤미올라 (2+2+2)'],ans:isH?1:0,
+      exp:isH?'8분음표 여섯 개를 둘씩 묶어 강세 — 박자표는 6/8 그대로'
+             :'셋씩 묶은 원래 6/8'};
+  }
   if(type==='interval'){
     var IV=[[1,'\uB2E82\uB3C4'],[2,'\uC7A52\uB3C4'],[3,'\uB2E83\uB3C4'],[4,'\uC7A53\uB3C4'],
             [5,'\uC644\uC8044\uB3C4'],[7,'\uC644\uC8045\uB3C4'],[9,'\uC7A56\uB3C4'],[12,'\uC644\uC8048\uB3C4']];
@@ -1107,9 +1221,9 @@ function genDrill(type){
       opts:op,ans:op.indexOf(I[1]),exp:I[1]+' \u2014 \uBC18\uC74C '+I[0]+'\uAC1C'};
   }
   if(type==='beatcount'){
-    var nb=2+rnd(5);
+    var nb=2+rnd(3);
     var op0=[];
-    for(var z=2;z<=6;z++)op0.push(String(z)+'\uBC15');
+    for(var z=2;z<=4;z++)op0.push(String(z)+'\uBC15');
     return{q:'\uBA87 \uBC15\uC778\uAC00\uC694? \uC190\uC73C\uB85C \uCE58\uBA70 \uC138\uC5B4\uBCF4\uC138\uC694.',plays:[['\uB4E3\uAE30',{pulse:nb}]],
       opts:op0,ans:nb-2,exp:nb+'\uBC15'};
   }
@@ -1274,7 +1388,7 @@ function midiToNote(m,pref){
   return{let:t[0],oct:oct,acc:t[1]};
 }
 function drillPlay(spec){
-  ac();
+  stopAll();ac();
   if(Object.prototype.toString.call(spec)==='[object Array]'){playSeq(spec,100);return;}
   if(spec.orn!==undefined){
     var b=pnl('C4 E4 G4 E4'),t=0.08,sp=0.5;
@@ -1303,8 +1417,53 @@ function drillPlay(spec){
     for(var r4=0;r4<2;r4++)for(var b4=0;b4<nb2;b4++){
       for(var d4=0;d4<3;d4++){click(t4,d4===0&&b4===0);t4+=sp4/3;}
     }return;}
+  if(spec.tup){
+    var n7=spec.tup,sp7=0.62,t7=0.1;
+    for(var b7=0;b7<4;b7++){
+      var cnt7=(b7===1||b7===3)?n7:2;
+      click(t7,b7===0?2:1);
+      for(var k7=0;k7<cnt7;k7++)
+        tone(midiOf(pn('G4')),t7+k7*sp7/cnt7,sp7/cnt7*0.8,null,k7===0?0.24:0.17);
+      t7+=sp7;
+    }
+    return;
+  }
+  if(spec.hemi!==undefined){
+    var u8=0.21,t8=0.1;
+    for(var r8=0;r8<3;r8++){
+      if(spec.hemi){
+        for(var g8=0;g8<3;g8++)for(var s8=0;s8<2;s8++){
+          click(t8,s8===0?(g8===0?2:1):0);
+          tone(midiOf(pn('G4')),t8,u8*0.8,null,s8===0?0.26:0.15);t8+=u8;
+        }
+      }else{
+        for(var g9=0;g9<2;g9++)for(var s9=0;s9<3;s9++){
+          click(t8,s9===0?(g9===0?2:1):0);
+          tone(midiOf(pn('G4')),t8,u8*0.8,null,s9===0?0.26:0.15);t8+=u8;
+        }
+      }
+    }
+    return;
+  }
+  if(spec.full){
+    var bu2=spec.full.bu,nb3=spec.full.beats,sp6=0.62,t6=0.1;
+    for(var r6=0;r6<3;r6++)for(var b6=0;b6<nb3;b6++){
+      var sub=(bu2===1.5)?3:2;
+      for(var d6=0;d6<sub;d6++){
+        click(t6, d6!==0?0:(b6===0?2:1));
+        t6+=bu2*sp6/sub;
+      }
+    }
+    return;
+  }
   if(spec.div){var sp2=0.62,t2=0.1;for(var b2=0;b2<4;b2++){for(var d=0;d<spec.div;d++){click(t2,d===0);t2+=sp2/spec.div;}}return;}
-  if(spec.group){var u=0.2,t3=0.1;for(var r=0;r<3;r++)for(var g=0;g<spec.group.length;g++)for(var s=0;s<spec.group[g];s++){click(t3,s===0);t3+=u;}return;}
+  if(spec.group){
+    var u=0.24,t3=0.12;
+    for(var r=0;r<3;r++)for(var g=0;g<spec.group.length;g++)for(var s=0;s<spec.group[g];s++){
+      click(t3, s!==0?0:(g===0?2:1)); t3+=u;
+    }
+    return;
+  }
   if(spec.artic){var bb=pnl('C4 D4 E4 F4 G4'),t4=0.08,s4=0.45;
     for(var k=0;k<bb.length;k++){var du=(spec.artic==='stacc')?0.13:s4*0.97;var vo=(spec.artic==='accent'&&k===0)?0.34:0.2;tone(midiOf(bb[k]),t4,du,null,vo);t4+=s4;}return;}
   if(spec.sigim){
@@ -1316,16 +1475,25 @@ function drillPlay(spec){
   }
   if(spec.jang){playJangdan(spec.jang,2);return;}
 }
-function renderDrill(si){
-  var st=CUR[si];DR.si=si;DR.cur=genDrill(st.drill.type);
+function renderDrill(si,keep){
+  var st=CUR[si];DR.si=si;
+  if(!keep){
+    DR.cur=genDrill(st.drill.type);
+    DR.hist.push(DR.cur);
+    if(DR.hist.length>20)DR.hist.shift();
+    DR.hi=DR.hist.length-1;
+  }
   var d=DR.cur,h='<div class="dr-q">'+d.q+'</div>';
   if(d.plays.length){
     h+='<div class="dr-play">';
     for(var i=0;i<d.plays.length;i++)h+='<button class="dr-pb" data-t="drplay'+i+'" onclick="drillPlayIdx('+i+')">\u25B6 '+d.plays[i][0]+'</button>';
     h+='<button class="dr-pb sec2" data-t="drstop" onclick="stopAll()">\u25A0 \uC815\uC9C0</button>';
-    h+='<button class="dr-pb sec2" data-t="drnext" onclick="renderDrill('+si+')">\u21BB \uC0C8 \uBB38\uC81C</button></div>';
+    if(DR.hi>0)h+='<button class="dr-pb sec2" data-t="drprev" onclick="drillPrev()">\u2190 \uC774\uC804</button>';
+    h+='<button class="dr-pb sec2" data-t="drnext" onclick="drillNext()">\u21BB \uC0C8 \uBB38\uC81C</button></div>';
   }else{
-    h+='<div class="dr-play"><button class="dr-pb sec2" data-t="drnext" onclick="renderDrill('+si+')">\u21BB \uC0C8 \uBB38\uC81C</button></div>';
+    h+='<div class="dr-play">';
+    if(DR.hi>0)h+='<button class="dr-pb sec2" data-t="drprev" onclick="drillPrev()">\u2190 \uC774\uC804</button>';
+    h+='<button class="dr-pb sec2" data-t="drnext" onclick="drillNext()">\u21BB \uC0C8 \uBB38\uC81C</button></div>';
   }
   if(d.staff)h+='<div class="staffbox" id="drStaff"></div>';
   h+='<div class="dr-opts'+(d.opts.length<=2?' one':'')+'">';
@@ -1333,6 +1501,15 @@ function renderDrill(si){
   h+='</div><div class="dr-r" id="drR"></div><div class="dr-score" id="drS">\uC815\uB2F5 '+DR.ok+' / '+DR.tot+'</div>';
   document.getElementById('drillBox').innerHTML=h;
   if(d.staff)drawStaff('drStaff',d.staff.items,d.staff.opt);
+}
+function drillNext(){
+  if(DR.hi<DR.hist.length-1){DR.hi++;DR.cur=DR.hist[DR.hi];DR.cur.done=false;renderDrill(DR.si,true);return;}
+  renderDrill(DR.si);
+}
+function drillPrev(){
+  if(DR.hi<=0)return;
+  DR.hi--;DR.cur=DR.hist[DR.hi];DR.cur.done=false;
+  renderDrill(DR.si,true);
 }
 function drillPlayIdx(i){drillPlay(DR.cur.plays[i][1]);}
 function drillAns(i){
@@ -1457,12 +1634,20 @@ function genMelody(cfg){
 }
 function dictItems(arr){var r=[];for(var i=0;i<arr.length;i++)r.push({n:arr[i].n,d:arr[i].d});return r;}
 function dictCfg(base){
-  if(!base.tsPool||!base.tsPool.length)return base;
-  var ts=pick(base.tsPool),cfg={};
+  if(!base.tsPool&&!base.keyPool)return base;
+  var cfg={};
   for(var k in base)cfg[k]=base[k];
-  cfg.ts=ts;
-  cfg.beats=ts[0]*(4/ts[1]);
-  cfg.unit=(ts[1]===8&&ts[0]%3===0)?0.5:undefined;
+  if(base.tsPool&&base.tsPool.length){
+    var ts=pick(base.tsPool);
+    cfg.ts=ts;
+    cfg.beats=ts[0]*(4/ts[1]);
+    cfg.unit=(ts[1]===8&&ts[0]%3===0)?0.5:undefined;
+  }
+  if(base.keyPool&&base.keyPool.length){
+    var kk=pick(base.keyPool);
+    cfg.key=kk;
+    cfg.pool=keyPoolNames(kk,4);
+  }
   return cfg;
 }
 function newDict(si){
@@ -1486,6 +1671,7 @@ function drawDict(){
   h+='<div class="dt-tools"><button class="dt-t on" data-t="dtplay" onclick="dictPlay()">\u25B6 \uB4E3\uAE30</button>';
   h+='<button class="dt-t" data-t="dtslow" onclick="dictPlay(0.65)">\u25B6 \uB290\uB9AC\uAC8C</button>';
   h+='<button class="dt-t" data-t="dtclick" onclick="dictPlay(1,true)">\u25B6 \uBC15\uD45C \uAC19\uC774</button>';
+  if(!cfg.rhythmOnly)h+='<button class="dt-t" data-t="dtscale" onclick="dictScale()">\u266A \uC74C\uACC4\uB9CC</button>';
   h+='<button class="dt-t stop" data-t="dtstop" onclick="stopAll()">\u25A0 \uC815\uC9C0</button></div>';
   h+='<div class="dt-hint">'+(cfg.rhythmOnly
       ?('<b>리듬만</b> 받아적어요 — 음높이는 무시해요. '+(DT.kind==='rest'?'<b>쉼표</b>':'<b>음표</b>')+' 길이를 고르고 오선을 누르세요.')
@@ -1532,14 +1718,22 @@ function dictTap(ev){
 function addRest(){DT.inp.push({n:null,d:DT.dur});drawStaff('dtStaff',dictItems(DT.inp),{key:DT.cfg.key,ts:DT.cfg.ts,barEvery:DT.cfg.beats,nat:DT.cfg.sanjo?SANJO_NAT[DT.cfg.key]:null,beamGroups:DT.cfg.beamGroups});}
 function dictUndo(){DT.inp.pop();drawStaff('dtStaff',dictItems(DT.inp),{key:DT.cfg.key,ts:DT.cfg.ts,barEvery:DT.cfg.beats,nat:DT.cfg.sanjo?SANJO_NAT[DT.cfg.key]:null,beamGroups:DT.cfg.beamGroups});}
 function dictClear(){DT.inp=[];drawStaff('dtStaff',dictItems(DT.inp),{key:DT.cfg.key,ts:DT.cfg.ts,barEvery:DT.cfg.beats,nat:DT.cfg.sanjo?SANJO_NAT[DT.cfg.key]:null,beamGroups:DT.cfg.beamGroups});}
-function dictPlay(rate,withClick){
-  var cfg=DT.cfg,a=ac();if(!a)return;
+function dictPlay(rate,withClick,noScale){
+  stopAll();var cfg=DT.cfg,a=ac();if(!a)return;
   var sp=60/(cfg.bpm*(rate||1));
   var bu=cfg.groups?0.5:(cfg.unit===0.5?1.5:1);
   var per=Math.max(1,Math.round(cfg.beats/bu));
+  /* 음높이 문제는 음계를 먼저 들려 조를 잡아 준다 */
+  var pre=0;
+  if(!cfg.rhythmOnly&&!noScale){
+    var sc=cfg.pool,d0=0.2;
+    for(var q=0;q<sc.length;q++)
+      tone(midiOf(pn(sc[q].replace('n',''))),0.06+q*d0,d0*0.85,null,0.16);
+    pre=0.06+sc.length*d0+0.34;
+  }
   var lead=per*bu*sp;
-  for(var c0=0;c0<per;c0++)click(0.08+c0*bu*sp,c0===0);
-  var t=0.08+lead,total=0;
+  for(var c0=0;c0<per;c0++)click(pre+0.08+c0*bu*sp,c0===0?2:0);
+  var t=pre+0.08+lead,total=0;
   for(var i=0;i<DT.ans.length;i++){
     var it=DT.ans[i],dur=it.d*sp;
     if(it.n){
@@ -1553,7 +1747,13 @@ function dictPlay(rate,withClick){
     }
     t+=dur;total+=it.d;
   }
-  if(withClick)metro(0.08+lead,total,sp,bu,per,cfg.groups||null);
+  if(withClick)metro(pre+0.08+lead,total,sp,bu,per,cfg.groups||null);
+}
+function dictScale(){
+  stopAll();ac();
+  var sc=DT.cfg.pool,d0=0.24;
+  for(var q=0;q<sc.length;q++)
+    tone(midiOf(pn(sc[q].replace('n',''))),0.06+q*d0,d0*0.85,null,0.2);
 }
 function dictCheck(){
   var a=DT.ans,b=DT.inp,ok=true,marks=[];
@@ -1598,7 +1798,7 @@ function padSave(){try{localStorage.setItem(PADKEY,JSON.stringify({key:PAD.key,t
 function openPad(){
   stopAll();
   padLoad();
-  var h='<button class="back" data-t="back" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  var h='<button class="back" data-t="back" onclick="openMethod()">← 채보의 단계로</button>';
   h+='<div class="l-head">';
   h+='<div class="l-t">\uC790\uC720 \uAE30\uBCF4</div>';
   h+='<div id="padBody"></div>';
@@ -1678,7 +1878,7 @@ function drawPad(){
     h+='<button class="dt-a" data-t="pclear" onclick="padClear()">전체 지우기</button>';
   }
   h+='</div>';
-  h+='<button class="backbtn" data-t="pback" onclick="openMethod()">← 학습 지도로 돌아가기</button>';
+  h+='<button class="backbtn" data-t="pback" onclick="openMethod()">← 채보의 단계로 돌아가기</button>';
   document.getElementById('padBody').innerHTML=h;
   drawStaff('padStaff',padItems(),{key:PAD.key,ts:PAD.ts,barEvery:padBarEvery(),nat:SANJO_NAT[PAD.key]||null});
 }
@@ -1771,7 +1971,7 @@ function gestSpec(g,m){
   return null;
 }
 function padPlay(withClick){
-  ac();
+  stopAll();ac();
   var seq=[];
   for(var i=0;i<PAD.notes.length;i++){
     var x=PAD.notes[i];
@@ -1814,7 +2014,7 @@ var PIECES=[
 var RP={pi:0,mi:0,inp:[],dur:1,acc:'key'};
 function openReal(){
   stopAll();
-  var h='<button class="back" data-t="back" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  var h='<button class="back" data-t="back" onclick="openMethod()">← 채보의 단계로</button>';
   h+='<div class="l-head">';
   h+='<div class="l-t">\uAC00\uB77D \uCC44\uBCF4</div>';
   for(var i=0;i<PIECES.length;i++){
@@ -1822,7 +2022,7 @@ function openReal(){
     h+='<button class="stg'+(P.sanjo?' sanjo':'')+'" data-t="pc-'+P.id+'" onclick="openPiece('+i+')">'
       +'<div class="num">'+(i+1)+'</div><div class="txt"><div class="t">'+P.t+'</div></div><div class="chk">\u203A</div></button>';
   }
-  h+='<button class="backbtn" data-t="rback" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
+  h+='<button class="backbtn" data-t="rback" onclick="openMethod()">← 채보의 단계로 돌아가기</button>';
   document.getElementById('lessonBody').innerHTML=h;
   document.getElementById('home').style.display='none';
   document.getElementById('lesson').style.display='block';
@@ -1964,7 +2164,7 @@ function handRow(list){
 }
 
 /* ══════ 채보법 (Method) ══════ */
-var METHOD=[{id:'m1',t:'리듬이 먼저다',lead:'박을 잡고 리듬을 고정한 뒤에 음을 올린다.',
+var METHOD=[{id:'m1',t:'리듬 파악하기',lead:'박을 잡고 리듬을 고정한 뒤에 음을 올린다.',
  body:'<table class="ctbl"><tr><th></th><th>할 일</th></tr>'
  +'<tr><td><b>1</b></td><td>음악을 듣고 <b>한 마디가 몇 박</b>인지 파악한다</td></tr>'
  +'<tr><td><b>2</b></td><td><b>박자표</b>를 정한다</td></tr>'
@@ -1979,30 +2179,19 @@ var METHOD=[{id:'m1',t:'리듬이 먼저다',lead:'박을 잡고 리듬을 고�
  +handRow([[3,'한 박 안 3분박']])
  +'<div class="cnote"><b>4·5단계를 나누는 이유 · </b>리듬과 음을 동시에 잡으려 하면 둘 다 놓쳐요. 리듬형을 연필로 흐리게 깔아 두면 음을 찾을 <b>틀</b>이 생깁니다.</div>'},
 
-{id:'m2',t:'음을 찾아 넣기',lead:'리듬형이 깔렸으니 그 위에 음을 올린다.',
- body:'<p>1번에서 박자표와 리듬형까지 끝냈어요. 이제 <b>무슨 음인지</b>를 정할 차례입니다.</p>'
- +'<table class="ctbl"><tr><th></th><th>할 일</th></tr>'
- +'<tr><td><b>1</b></td><td><b>으뜸음</b>을 찾는다 — 선율이 돌아와 쉬는 음, 대개 마지막 음</td></tr>'
- +'<tr><td><b>2</b></td><td>그 으뜸음을 <b>오선 어디에 놓을지</b> 정한다</td></tr>'
- +'<tr><td><b>3</b></td><td>곡에 쓰인 음을 모아 <b>음계</b>를 확인한다 — 어디에 반음이 있나</td></tr>'
- +'<tr><td><b>4</b></td><td><b>조표</b>를 적는다</td></tr>'
- +'<tr><td><b>5</b></td><td>각 음이 <b>앞 음에서 얼마나 움직였는지</b>로 판단한다</td></tr>'
- +'<tr><td><b>6</b></td><td>깔아 둔 <b>리듬형 위에</b> 음을 얹는다</td></tr>'
- +'<tr><td><b>7</b></td><td>조에 없는 음은 <b>임시표</b>로 적는다</td></tr></table>'
+{id:'m2',t:'음정 찾기',lead:'리듬형이 깔렸으니 그 위에 음을 올린다.',
+ body:'<table class="ctbl"><tr><th></th><th>할 일</th></tr>'
+ +'<tr><td><b>1</b></td><td>음원에 사용된 음을 듣고 <b>모아 적는다</b></td></tr>'
+ +'<tr><td><b>2</b></td><td>\u266F 또는 \u266D 을 붙인 <b>임시표로 음표를 음높이 대로 나열한다</b></td></tr>'
+ +'<tr><td><b>3</b></td><td><b>으뜸음</b>을 파악하고 오선보에 <b>조표</b>를 적는다</td></tr>'
+ +'<tr><td><b>4</b></td><td>깔아둔 <b>리듬형 위에</b> 음정을 찾아 기보한다</td></tr></table>'
 
- +'<div class="mh">5단계 — 판단 순서</div>'
- +'<p>한 번에 음이름을 맞히려 하면 놓쳐요. <b>세 단계로 좁혀</b> 갑니다.</p>'
+ +'<div class="mh">판단의 흐름</div>'
  +'<table class="ctbl"><tr><th>순서</th><th>판단</th></tr>'
  +'<tr><td><b>윤곽</b></td><td>올라갔나 내려갔나 제자리인가</td></tr>'
  +'<tr><td><b>거리</b></td><td>옆 계단인가 건너뛰었나. 건너뛰었으면 몇 계단</td></tr>'
  +'<tr><td><b>음이름</b></td><td>으뜸음에서 몇 번째인지 세어 이름을 붙인다</td></tr></table>'
  +'<div class="cnote"><b>도약이 나오면 · </b>큰 도약은 대개 <b>으뜸화음</b>(1·3·5) 안에서 일어나요. 멀리 뛰었다 싶으면 이 셋부터 대 보세요.</div>'
-
- +'<div class="mh">2단계 — 으뜸음을 어디에 놓나</div>'
- +'<table class="ctbl"><tr><th>구분</th><th>기준</th></tr>'
- +'<tr><td>서양음악</td><td>들리는 <b>실제 음높이</b>에 맞춘다</td></tr>'
- +'<tr><td>국악</td><td><b>본청을 C로 고정</b>한다. 실음이 아니라 간격으로 적는다</td></tr></table>'
- +'<div class="cnote a">국악은 악기와 연주자마다 실제 음높이가 달라요. 본청을 C로 두면 <b>어느 연주를 적어도 같은 모양</b>이 나와 구조를 비교할 수 있습니다.</div>'
 
  +'<div class="mh">모르는 음은</div>'
  +'<p><b>비워 두세요.</b> 틀린 추측을 적어 놓으면 그게 기준이 돼서 뒤가 다 어긋나요. 빈칸이 낫습니다. 한 구간을 반복해 들으며 확실한 음부터 채우고, 남은 자리를 좁혀 가세요.</p>'
@@ -2010,7 +2199,7 @@ var METHOD=[{id:'m1',t:'리듬이 먼저다',lead:'박을 잡고 리듬을 고�
 ];
 function openMethod(){
   stopAll();
-  var h='<button class="back" data-t="back" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
   h+='<div class="l-head">';
   h+='<div class="l-t">\uC5B4\uB5BB\uAC8C \uCC44\uBCF4\ud560 \uac83\uc778\uac00</div>';
   h+='</div>';
@@ -2153,7 +2342,7 @@ function prSeq(){
 function openProto(){
   stopAll();
   PR.ans=null;
-  var h='<button class="back" data-t="back" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  var h='<button class="back" data-t="back" onclick="openMethod()">← 채보의 단계로</button>';
   h+='<div class="l-head">';
   h+='<div class="l-t">\uC911\uAC04 \uAE30\uBCF4 \uC5F0\uC2B5</div>';
   h+='<div id="prBody"></div>';
@@ -2199,7 +2388,7 @@ function drawProto(){
   h+='<button class="dt-a main" data-t="prcheck" onclick="prCheck()">\uCC44\uC810</button></div>';
   h+='<div class="dt-r" id="prR"></div><div class="dt-ans" id="prA"></div>';
   h+='<div class="dt-act"><button class="dt-a" data-t="prnew" onclick="prNew()">\u21BB \uC0C8 \uBB38\uC81C</button></div>';
-  h+='<button class="backbtn" data-t="prback" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
+  h+='<button class="backbtn" data-t="prback" onclick="openMethod()">← 채보의 단계로 돌아가기</button>';
   document.getElementById('prBody').innerHTML=h;
   prRender();
 }
@@ -2235,7 +2424,7 @@ function prSetDeg(d){
 }
 function prClear(){PR.cells=new Array(prCellCount());PR.deg={};PR.sel=-1;prRender();}
 function prPlay(rate,withClick){
-  ac();playSeq(prSeq(),PR.bpm*(rate||1),!!withClick,PR.beats);
+  stopAll();ac();playSeq(prSeq(),PR.bpm*(rate||1),!!withClick,PR.beats);
 }
 function prCheck(){
   var n=prCellCount(),rOK=true,pOK=true;
@@ -2282,7 +2471,7 @@ function fmtT(s){
 }
 function openAudio(){
   stopAll();
-  var h='<button class="back" data-t="back" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  var h='<button class="back" data-t="back" onclick="openMethod()">← 채보의 단계로</button>';
   h+='<div class="l-head">';
   h+='<div class="l-t">\uC74C\uC6D0 \uB4E3\uACE0 \uCC44\uBCF4\ud558\uae30</div>';
   h+='<div id="apBody"></div>';
@@ -2329,7 +2518,7 @@ function drawAudio(){
   h+='<span class="ap-bpm" id="apBpm">\u2669 = \u2014</span></div>';
   h+='<div class="dt-act"><button class="dt-a" data-t="apmark" onclick="apAddMark()">\uD83D\uDCCD \uAD6C\uAC04 \uC800\uC7A5</button></div>';
   h+='<div id="apMarks"></div>';
-  h+='<button class="backbtn" data-t="apback" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
+  h+='<button class="backbtn" data-t="apback" onclick="openMethod()">← 채보의 단계로 돌아가기</button>';
   document.getElementById('apBody').innerHTML=h;
   apBindCanvas();apRedraw();apMarksHtml();
 }
@@ -2683,7 +2872,7 @@ function renderHome(){
 function openLesson(i){
   stopAll();
   var c=CUR[i],dn=!!ST.done[c.id];
-  DR.ok=0;DR.tot=0;
+  DR.ok=0;DR.tot=0;DR.hist=[];DR.hi=-1;
   var h='<button class="back" data-t="back" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
   h+='<div class="l-head">';
   h+='<div class="l-t">'+c.t+'</div></div>';
@@ -2698,8 +2887,8 @@ function openLesson(i){
     }
     h+='</div>';
   }
-  h+='<div class="sec"><div class="sec-h"><div class="n'+(c.tr==='s'?' a':'')+'">3</div>\uB4DC\uB9B4</div><div class="drill" id="drillBox"></div></div>';
-  h+='<div class="sec"><div class="sec-h"><div class="n'+(c.tr==='s'?' a':'')+'">4</div>\uBBF8\uB2C8 \uCC44\uBCF4</div><div class="dict" id="dictBox"></div></div>';
+  h+='<div class="sec"><div class="sec-h"><div class="n'+(c.tr==='s'?' a':'')+'">3</div>연습문제</div><div class="drill" id="drillBox"></div></div>';
+  if(c.dict)h+='<div class="sec"><div class="sec-h"><div class="n'+(c.tr==='s'?' a':'')+'">4</div>\uBBF8\uB2C8 \uCC44\uBCF4</div><div class="dict" id="dictBox"></div></div>';
   h+='<button class="donebtn'+(dn?' off':'')+'" data-t="done" id="doneBtn" onclick="toggleDone(\''+c.id+'\')">'+(dn?'\u2713 \uC644\uB8CC\uD568 \u2014 \uD574\uC81C\ud558\uae30':'\uC774 \uB2E8\uACC4 \uC644\uB8CC')+'</button>';
   h+='<button class="backbtn" data-t="backBottom" onclick="goHome()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C \uB3CC\uC544\uAC00\uAE30</button>';
   if(i+1<CUR.length){
@@ -2709,19 +2898,35 @@ function openLesson(i){
   document.getElementById('lessonBody').innerHTML=h;
   document.getElementById('home').style.display='none';
   document.getElementById('lesson').style.display='block';
-  if(c.ex&&c.ex.length&&c.ex[0][1]!=='X')drawStaff('exStaff',seqOf(pnl(c.ex[0][1]),1),{key:c.dict.key,labels:true});
-  renderDrill(i);newDict(i);
+  if(c.ex&&c.ex.length&&c.ex[0][1]!=='X')showEx(i,0);
+  renderDrill(i);if(c.dict)newDict(i);
   window.scrollTo(0,0);
+}
+function exKeyOf(c,ei){
+  if(c.exKey&&c.exKey[ei])return c.exKey[ei];
+  return (c.dict&&c.dict.key)||'C';
+}
+function exItems(c,ei){
+  var ns=pnl(c.ex[ei][1]),out=[],art=c.exArt?c.exArt[ei]:null;
+  for(var i=0;i<ns.length;i++){
+    var it={n:ns[i],d:1};
+    if(art){
+      if(art.all)it.art=art.all;
+      else if(art.first&&i===0)it.art=art.first;
+    }
+    out.push(it);
+  }
+  return out;
 }
 function showEx(si,ei){
   var c=CUR[si];
   if(!c.ex||!c.ex[ei])return;
-  var raw=c.ex[ei][1];
   var box=document.getElementById('exStaff');
   if(!box)return;
-  if(raw==='X'){box.innerHTML='';return;}
-  drawStaff('exStaff',seqOf(pnl(raw),1),
-    {key:c.dict.key,labels:true,nat:c.sanjo?SANJO_NAT[c.dict.key]:null});
+  if(c.ex[ei][1]==='X'){box.innerHTML='';return;}
+  var k=exKeyOf(c,ei);
+  drawStaff('exStaff',exItems(c,ei),
+    {key:k,labels:true,nat:c.sanjo?SANJO_NAT[k]:null});
 }
 function toggleDone(id){
   if(ST.done[id])delete ST.done[id];else ST.done[id]=1;
@@ -2789,7 +2994,7 @@ var REFTABS=[['yul','\uC728\uBA85'],['jang','\uC7A5\uB2E8'],['meter','\uBC15\uC7
 var YULMODE='jeongak';
 function openRef(k){
   stopAll();
-  var h='<button class="back" data-t="back" onclick="openMethod()">\u2190 \uD559\uC2B5 \uC9C0\uB3C4\uB85C</button>';
+  var h='<button class="back" data-t="back" onclick="openMethod()">← 채보의 단계로</button>';
   h+='<div class="l-head"><div class="l-t">\uC728\uBA85 \u00B7 \uC7A5\uB2E8 \u00B7 \uC74C\uC815 \u00B7 \uAE30\uD638</div>';
   h+='</div>';
   h+='<div class="ref-nav">';
