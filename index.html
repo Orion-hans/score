@@ -143,6 +143,9 @@ header .sub{font-size:.76rem;color:var(--muted);font-family:var(--mono);font-wei
 .dr-after{margin-top:8px;font-size:.95rem;color:var(--body);font-weight:700;}
 .dr-after b{color:var(--mint);font-size:1.08rem;}
 .dr-final{margin-top:10px;background:rgba(111,233,205,.12);border:1px solid rgba(111,233,205,.4);border-radius:10px;padding:12px 14px;font-size:.95rem;font-weight:800;color:var(--text);}
+.tps{margin:10px 0;}
+.tp-l{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:3px;}
+.c5{background:#f7f9fa;border-radius:11px;padding:10px;margin:12px 0;}
 .ledger,.kbd{background:#f7f9fa;border-radius:11px;padding:12px 10px;margin:12px 0;overflow-x:auto;}
 .kbd-lab{font-size:.78rem;font-weight:700;color:#5c6670;text-align:center;margin-bottom:6px;}
 .rhy{background:#f7f9fa;border-radius:11px;padding:12px 10px;margin:12px 0;overflow-x:auto;}
@@ -895,28 +898,143 @@ function ledgerSVG(){
 /* 건반 + 오선 — 음정을 간격으로 */
 function keyboardSVG(opt){
   opt=opt||{};
-  var lo=opt.lo||0, hi=opt.hi||opt.lo+7;   /* 흰건반 인덱스 (0=C4) */
-  var mark=opt.mark||[];                    /* 강조할 흰건반 인덱스 */
-  var WW=34,WH=96,BW=21,BH=60;
-  var n=hi-lo+1,W=n*WW+16,H=WH+42;
+  var lo=opt.lo||0, hi=(opt.hi!=null?opt.hi:lo+7);
+  var mark=opt.mark||[];
+  var degs=opt.degs||null;        /* 흰건반마다 도수 라벨 */
+  var span=opt.span||null;        /* [시작,끝,라벨] 아래 범위 표시 */
+  var WW=40,WH=96,BW=25,BH=60;
+  var n=hi-lo+1,TOP=(degs?26:14),W=n*WW+16,H=TOP+WH+(span?34:12);
   var LET=['C','D','E','F','G','A','B'];
-  var BLK=[1,1,0,1,1,1,0];                  /* 각 흰건반 오른쪽에 검은건반? */
+  var BLK=[1,1,0,1,1,1,0];
   var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;max-width:'+W+'px;height:auto;display:block">';
   for(var i=0;i<n;i++){
     var idx=lo+i,x=8+i*WW,on=(mark.indexOf(idx)>=0);
-    s+='<rect x="'+x+'" y="14" width="'+(WW-2)+'" height="'+WH+'" rx="3" fill="'+(on?'#3cc4a4':'#ffffff')+'" stroke="#9aa4ad" stroke-width="1"/>';
-    s+='<text x="'+(x+WW/2-1)+'" y="'+(14+WH-9)+'" text-anchor="middle" font-size="11" font-weight="700" fill="'+(on?'#0a1013':'#5c6670')+'">'+LET[idx%7]+'</text>';
-    if(on)s+='<text x="'+(x+WW/2-1)+'" y="10" text-anchor="middle" font-size="11" font-weight="800" fill="#3cc4a4" font-family="ui-monospace,monospace">'+(mark.indexOf(idx)+1)+'</text>';
+    s+='<rect x="'+x+'" y="'+TOP+'" width="'+(WW-2)+'" height="'+WH+'" rx="3" fill="'+(on?'#3cc4a4':'#ffffff')+'" stroke="#9aa4ad" stroke-width="1"/>';
+    s+='<text x="'+(x+WW/2-1)+'" y="'+(TOP+WH-9)+'" text-anchor="middle" font-size="11.5" font-weight="700" fill="'+(on?'#0a1013':'#5c6670')+'">'+LET[idx%7]+'</text>';
+    if(degs&&degs[i]){
+      s+='<text x="'+(x+WW/2-1)+'" y="18" text-anchor="middle" font-size="12" font-weight="800" fill="#1f9e7a" font-family="ui-monospace,monospace">'+degs[i]+'</text>';
+    }else if(on&&!degs){
+      s+='<text x="'+(x+WW/2-1)+'" y="10" text-anchor="middle" font-size="11" font-weight="800" fill="#3cc4a4" font-family="ui-monospace,monospace">'+(mark.indexOf(idx)+1)+'</text>';
+    }
   }
   var bmark=opt.black||[];
-  for(var j=0;j<n;j++){
-    var idx2=lo+j;
+  for(var j2=0;j2<n;j2++){
+    var idx2=lo+j2;
     if(!BLK[idx2%7])continue;
-    if(j===n-1)continue;
-    var bx=8+j*WW+WW-BW/2-1,bon=(bmark.indexOf(idx2)>=0);
-    s+='<rect x="'+bx+'" y="14" width="'+BW+'" height="'+BH+'" rx="2" fill="'+(bon?'#1f9e7a':'#2a3540')+'"/>';
-    if(bon)s+='<text x="'+(bx+BW/2)+'" y="10" text-anchor="middle" font-size="11" font-weight="800" fill="#3cc4a4" font-family="ui-monospace,monospace">2</text>';
+    if(j2===n-1)continue;
+    var bx=8+j2*WW+WW-BW/2-1,bon=(bmark.indexOf(idx2)>=0);
+    s+='<rect x="'+bx+'" y="'+TOP+'" width="'+BW+'" height="'+BH+'" rx="2" fill="'+(bon?'#1f9e7a':'#2a3540')+'"/>';
   }
+  /* 아래 범위 표시 — 옥타브 등 */
+  if(span){
+    var xa=8+(span[0]-lo)*WW+WW/2-1, xb=8+(span[1]-lo)*WW+WW/2-1, sy=TOP+WH+13;
+    s+='<line x1="'+xa+'" y1="'+sy+'" x2="'+xb+'" y2="'+sy+'" stroke="#c0392b" stroke-width="1.6"/>';
+    s+='<line x1="'+xa+'" y1="'+(sy-4)+'" x2="'+xa+'" y2="'+(sy+4)+'" stroke="#c0392b" stroke-width="1.6"/>';
+    s+='<line x1="'+xb+'" y1="'+(sy-4)+'" x2="'+xb+'" y2="'+(sy+4)+'" stroke="#c0392b" stroke-width="1.6"/>';
+    s+='<text x="'+((xa+xb)/2)+'" y="'+(sy+16)+'" text-anchor="middle" font-size="11.5" font-weight="800" fill="#c0392b">'+span[2]+'</text>';
+  }
+  return s+'</svg>';
+}
+/* 잇단음표·헤미올라 기보 예시 */
+function drawTupletStaff(hostId,kind){
+  var host=(typeof hostId==='string')?document.getElementById(hostId):hostId;
+  if(!host||!vexOK())return;
+  host.innerHTML='';
+  var VF=Vex.Flow,W=460,H=130;
+  try{
+    var rend=new VF.Renderer(host,VF.Renderer.Backends.SVG);
+    rend.resize(W,H);
+    var c=rend.getContext();
+    var ts=(kind==='duplet'||kind==='hemiola'||kind==='hemi-norm')?'6/8':'4/4';
+    var stave=new VF.Stave(6,26,W-16);
+    stave.addClef('treble').addTimeSignature(ts);
+    stave.setContext(c).draw();
+
+    function N(d){return new VF.StaveNote({keys:['b/4'],duration:d});}
+    var notes=[],tuplets=[],beams=[];
+
+    if(kind==='triplet'){
+      /* 4/4 — 4분음표 / 셋잇단 / 4분음표 / 셋잇단 */
+      var t1=[N('8'),N('8'),N('8')],t2=[N('8'),N('8'),N('8')];
+      notes=[N('q')].concat(t1,[N('q')],t2);
+      tuplets.push(new VF.Tuplet(t1,{num_notes:3,notes_occupied:2}));
+      tuplets.push(new VF.Tuplet(t2,{num_notes:3,notes_occupied:2}));
+      beams.push(new VF.Beam(t1));beams.push(new VF.Beam(t2));
+    }else if(kind==='quintuplet'){
+      var q1=[N('16'),N('16'),N('16'),N('16'),N('16')];
+      notes=[N('q')].concat(q1,[N('q'),N('q')]);
+      tuplets.push(new VF.Tuplet(q1,{num_notes:5,notes_occupied:4}));
+      beams.push(new VF.Beam(q1));
+    }else if(kind==='septuplet'){
+      var s1=[];for(var i=0;i<7;i++)s1.push(N('16'));
+      notes=[N('q')].concat(s1,[N('q'),N('q')]);
+      tuplets.push(new VF.Tuplet(s1,{num_notes:7,notes_occupied:4}));
+      beams.push(new VF.Beam(s1));
+    }else if(kind==='duplet'){
+      /* 6/8 — 8분 셋 / 두잇단 */
+      var d1=[N('8'),N('8'),N('8')];
+      var d2=[N('8'),N('8')];
+      notes=d1.concat(d2);
+      tuplets.push(new VF.Tuplet(d2,{num_notes:2,notes_occupied:3}));
+      beams.push(new VF.Beam(d1));beams.push(new VF.Beam(d2));
+    }else if(kind==='hemi-norm'){
+      /* 6/8 원래 — 셋씩 두 묶음 */
+      var h1=[N('8'),N('8'),N('8')],h2=[N('8'),N('8'),N('8')];
+      notes=h1.concat(h2);
+      beams.push(new VF.Beam(h1));beams.push(new VF.Beam(h2));
+    }else if(kind==='hemiola'){
+      /* 6/8 헤미올라 — 둘씩 세 묶음 + 강세 */
+      var g1=[N('8'),N('8')],g2=[N('8'),N('8')],g3=[N('8'),N('8')];
+      notes=g1.concat(g2,g3);
+      beams.push(new VF.Beam(g1));beams.push(new VF.Beam(g2));beams.push(new VF.Beam(g3));
+      [g1[0],g2[0],g3[0]].forEach(function(n){
+        try{var a=new VF.Articulation('a>');a.setPosition(VF.Modifier.Position.ABOVE);n.addModifier(a,0);}catch(e){}
+      });
+    }
+    var beats=(ts==='6/8')?6:4, bv=(ts==='6/8')?8:4;
+    var voice=new VF.Voice({num_beats:beats,beat_value:bv}).setMode(VF.Voice.Mode.SOFT);
+    voice.addTickables(notes);
+    new VF.Formatter().joinVoices([voice]).format([voice],W-90);
+    voice.draw(c,stave);
+    beams.forEach(function(b){b.setContext(c).draw();});
+    tuplets.forEach(function(t){t.setContext(c).draw();});
+    apFitSvg(host,W,H);
+  }catch(e){host.innerHTML='<div class="stf-fail">악보를 그리지 못했음</div>';}
+}
+/* 5도권 — 조표가 ♯·♭ 양쪽으로 늘어나는 구조 */
+function circle5SVG(){
+  var W=360,H=360,cx=W/2,cy=H/2,R=128,r2=86;
+  /* [장조, 단조, 조표수(+♯ / -♭)] 12시부터 시계방향 */
+  var K=[['C','a',0],['G','e',1],['D','b',2],['A','f\u266F',3],['E','c\u266F',4],['B','g\u266F',5],
+         ['F\u266F/G\u266D','d\u266F',6],['D\u266D','b\u266D',-5],['A\u266D','f',-4],['E\u266D','c',-3],
+         ['B\u266D','g',-2],['F','d',-1]];
+  var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;max-width:'+W+'px;height:auto;display:block">';
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="#d8dee3" stroke-width="1"/>';
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r2+'" fill="none" stroke="#e4e9ec" stroke-width="1"/>';
+  for(var i=0;i<12;i++){
+    var a=(-90+i*30)*Math.PI/180;
+    var x1=cx+Math.cos(a)*R, y1=cy+Math.sin(a)*R;
+    var x2=cx+Math.cos(a)*r2, y2=cy+Math.sin(a)*r2;
+    var k=K[i],n=k[2];
+    var col=(n>0)?'#1f6fb2':(n<0?'#b25a1f':'#3cc4a4');
+    /* 장조 (바깥) */
+    s+='<circle cx="'+x1+'" cy="'+y1+'" r="19" fill="'+(n===0?'#3cc4a4':'#ffffff')+'" stroke="'+col+'" stroke-width="1.8"/>';
+    s+='<text x="'+x1+'" y="'+(y1+4.5)+'" text-anchor="middle" font-size="'+(k[0].length>3?9:12)+'" font-weight="800" fill="'+(n===0?'#0a1013':'#12181d')+'">'+k[0]+'</text>';
+    /* 단조 (안쪽) */
+    s+='<text x="'+x2+'" y="'+(y2+4)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#5c6670">'+k[1]+'</text>';
+    /* 조표 수 (바깥 라벨) */
+    var x3=cx+Math.cos(a)*(R+30), y3=cy+Math.sin(a)*(R+30);
+    var lab=(n===0)?'':(n>0?'\u266F'+n:'\u266D'+(-n));
+    if(lab)s+='<text x="'+x3+'" y="'+(y3+4)+'" text-anchor="middle" font-size="11" font-weight="800" fill="'+col+'" font-family="ui-monospace,monospace">'+lab+'</text>';
+  }
+  /* 방향 화살표 */
+  s+='<path d="M'+(cx+34)+','+(cy-52)+' A62,62 0 0 1 '+(cx+56)+','+(cy-20)+'" fill="none" stroke="#1f6fb2" stroke-width="2" marker-end="url(#ar1)"/>';
+  s+='<path d="M'+(cx-34)+','+(cy-52)+' A62,62 0 0 0 '+(cx-56)+','+(cy-20)+'" fill="none" stroke="#b25a1f" stroke-width="2" marker-end="url(#ar2)"/>';
+  s+='<defs><marker id="ar1" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#1f6fb2"/></marker>';
+  s+='<marker id="ar2" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#b25a1f"/></marker></defs>';
+  s+='<text x="'+cx+'" y="'+(cy-10)+'" text-anchor="middle" font-size="11.5" font-weight="800" fill="#1f6fb2">\u266F 늘어남 \u2192</text>';
+  s+='<text x="'+cx+'" y="'+(cy+8)+'" text-anchor="middle" font-size="11.5" font-weight="800" fill="#b25a1f">\u2190 \u266D 늘어남</text>';
+  s+='<text x="'+cx+'" y="'+(cy+26)+'" text-anchor="middle" font-size="9.5" fill="#9aa4ad">바깥 장조 · 안쪽 단조</text>';
   return s+'</svg>';
 }
 /* 입력용 건반 — 흰건반·검은건반 모두 클릭 가능 (검은건반 = 임시표) */
@@ -1208,7 +1326,7 @@ var CUR=[
  +'<tr><td>위치</td><td>음표가 줄 <b>위</b>에 놓이면 그 줄까지만, 줄 <b>사이</b>면 그 아래 줄까지</td></tr></table>'
  +'<div class="cnote">가온다(C4)는 높은음자리표 아래 <b>덧줄 하나</b>. 낮은음자리표에서는 <b>위 덧줄 하나</b>. 두 자리표를 잇는 기준음.</div>'
  +'<div class="cnote"><b>세는 법 · </b>덧줄이 여럿이면 오선 끝에서부터 <b>한 줄씩 세어 올라감</b>. 한눈에 안 잡히면 세는 수밖에 없음.</div>'
- +'<div class="cnote"><b>순서 · </b>윤곽 → 도수 → 음이름. 처음부터 정확한 음을 잡으려 하면 다 놓쳐요.</div>',
+ +'<div class="cnote"><b>순서 · </b>윤곽 → 도수 → 음이름. 처음부터 정확한 음을 잡으려 하면 다 놓침.</div>',
  ex:[['도 레 미','C4 D4 E4'],['미 레 도','E4 D4 C4'],['도 미 레 도','C4 E4 D4 C4']],
  draw:'ledger',
  drill:{type:'notename'},
@@ -1230,16 +1348,7 @@ var CUR=[
  +'<div class="mh">세는 법</div>'
  +'<p>출발음을 <b>1</b>로 두고 도착음까지 흰건반을 하나씩 셈. 도착음의 숫자가 곧 음정.</p>'
  +'<div class="kbd" id="kb1"></div>'
- +'<p>C에서 G까지 세면 C·D·E·F·G로 다섯. 그래서 <b>5도</b>.</p>'
- +'<table class="ctbl"><tr><th>거리</th><th>이름</th><th>보기 (C에서)</th></tr>'
- +'<tr><td>제자리</td><td>1도</td><td>C \u2192 C</td></tr>'
- +'<tr><td>옆 계단</td><td>2도</td><td>C \u2192 D</td></tr>'
- +'<tr><td>하나 건너</td><td>3도</td><td>C \u2192 E</td></tr>'
- +'<tr><td>둘 건너</td><td>4도</td><td>C \u2192 F</td></tr>'
- +'<tr><td>셋 건너</td><td>5도</td><td>C \u2192 G</td></tr>'
- +'<tr><td>넷 건너</td><td>6도</td><td>C \u2192 A</td></tr>'
- +'<tr><td>다섯 건너</td><td>7도</td><td>C \u2192 B</td></tr>'
- +'<tr><td>한 바퀴</td><td>8도 (옥타브)</td><td>C \u2192 C</td></tr></table>'
+ +'<p>C에서 G까지 세면 C·D·E·F·G로 다섯. 그래서 <b>5도</b>. 한 바퀴 돌아 같은 이름으로 오면 <b>8도(옥타브)</b>.</p>'
  +'<div class="mh">오선에서 보면</div>'
  +'<p>오선은 <b>줄과 칸이 번갈아</b> 놓인 계단. 줄에서 칸으로 한 번 움직이면 2도.</p>'
  +'<div class="staffbox" id="ivStaff"></div>'
@@ -1262,20 +1371,14 @@ var CUR=[
  +'<tr><td>\u266F</td><td><b>파 도 솔 레 라 미 시</b></td></tr>'
  +'<tr><td>\u266D</td><td><b>시 미 라 레 솔 도 파</b></td></tr></table>'
  +'<p>두 순서는 서로 <b>역순</b>임. 한쪽만 외우면 됨.</p>'
- +'<table class="ctbl"><tr><th>\u266D</th><th>장조</th><th>단조</th></tr>'
- +'<tr><td>0</td><td>C</td><td>a</td></tr>'
- +'<tr><td>1</td><td>F</td><td>d</td></tr>'
- +'<tr><td>2</td><td>B\u266D</td><td>g</td></tr>'
- +'<tr><td>3</td><td>E\u266D</td><td>c</td></tr>'
- +'<tr><td>4</td><td>A\u266D</td><td>f</td></tr></table>'
- +'<table class="ctbl"><tr><th>\u266F</th><th>장조</th><th>단조</th></tr>'
- +'<tr><td>1</td><td>G</td><td>e</td></tr>'
- +'<tr><td>2</td><td>D</td><td>b</td></tr>'
- +'<tr><td>3</td><td>A</td><td>f\u266F</td></tr>'
- +'<tr><td>4</td><td>E</td><td>c\u266F</td></tr></table>'
+ +'<div class="mh">5도권</div>'
+ +'<p>조표는 <b>5도씩 옮겨가며</b> 하나씩 늘어남. 오른쪽으로 돌면 \u266F이, 왼쪽으로 돌면 \u266D이 늘어남.</p>'
+ +'<div class="c5" id="circ5"></div>'
+ +'<div class="cnote">바깥이 장조, 안쪽이 나란한 단조. 맨 위 <b>C</b>는 조표가 없고, 양쪽으로 갈수록 조표가 하나씩 붙음.</div>'
  +'<div class="cnote">장조와 나란한 단조는 <b>조표를 공유</b>함. 구별은 끝나는 음으로.</div>',
  ex:[['G장조 음계','G4 A4 B4 C5 D5 E5 F#5 G5'],['F장조 음계','F4 G4 A4 Bb4 C5 D5 E5 F5'],['B\u266D장조 음계','Bb4 C5 D5 Eb5 F5 G5 A5 Bb5']],
  exKey:['G','F','Bb'],
+ draw:'circle5',
  drill:{type:'keysig'},
  dict:{key:'G',keyPool:['G','D','F','Bb','Eb'],ts:[4,4],tsPool:[[3,4],[4,4],[6,8]],bpm:90,pool:['G4','A4','B4','C5','D5','E5','F#5'],durs:[0.5,1,1.5,2],beats:4,rest:true}},
 
@@ -1285,18 +1388,31 @@ var CUR=[
  +'<tr><td>\u266F</td><td>반음 올림</td></tr><tr><td>\u266D</td><td>반음 내림</td></tr>'
  +'<tr><td>\u266E</td><td>제자리 \u2014 조표·임시표를 취소</td></tr></table>'
  +'<div class="cnote"><b>지속 범위 · </b>임시표는 <b>같은 마디·같은 높이</b>에서만 유효함. 마디선을 넘으면 해제됨.</div>'
- +'<p>귀로는 <b>조에서 벗어난 낯선 색</b>으로 들려요. "여기 뭔가 이상하다" 싶은 지점이 임시표일 때가 많음.</p>',
+ +'<p>귀로는 <b>조에서 벗어난 낯선 색</b>으로 들림. "여기 뭔가 이상하다" 싶은 지점이 임시표일 때가 많음.</p>',
  ex:[['임시표 없음','C4 D4 E4 F4 G4'],['F\u266F 임시표','C4 D4 E4 F#4 G4'],['E\u266D 임시표','C4 D4 Eb4 F4 G4']],
  drill:{type:'accid'},
  dict:{key:'C',keyPool:['C','G','F'],ts:[4,4],tsPool:[[3,4],[4,4],[6,8]],bpm:88,pool:['C4','D4','E4','F4','F#4','G4','A4','Bb4','B4','C5'],durs:[0.5,1,1.5,2],beats:4,rest:true,bars:1}},
 
 /* ── C. 통합·심화 ── */
-{id:'w14',tr:'w',n:14,t:'통합 채보',lead:'리듬 골격 먼저, 그 위에 음높이. 순서를 지키는 것이 전부다.',
- concept:'<p>이제 합쳐요. 순서가 이 단계의 전부임.</p>'
- +'<table class="ctbl"><tr><th></th><th>할 일</th></tr>'+'<tr><td>1</td><td>연필 놓고 전체를 두세 번 듣는다</td></tr>'+'<tr><td>2</td><td>손으로 치며 박을 짚는다</td></tr>'+'<tr><td>3</td><td>박이 둘로 나뉘나 셋으로 나뉘나 정한다</td></tr>'+'<tr><td>4</td><td>강박 간격을 세어 박자표를 정한다</td></tr>'+'<tr><td>5</td><td><b>음가 없는 꾸밈을 걸러낸다</b></td></tr>'+'<tr><td>6</td><td>리듬 골격을 적는다 — 음이 시작하는 자리만</td></tr>'+'<tr><td>7</td><td>으뜸음을 찾는다</td></tr>'+'<tr><td>8</td><td>리듬 위에 음높이를 채운다 — 윤곽 → 도수 → 음이름</td></tr>'+'<tr><td>9</td><td>꾸밈과 주법을 기호로 얹는다</td></tr>'+'<tr><td>10</td><td>원음과 나란히 들으며 검산한다</td></tr></table>'
- +'<div class="cnote"><b>5번이 리듬보다 앞인 이유 · </b>꾸밈음은 <b>음가가 없음</b>. 걸러내지 않고 리듬을 적으면 시작점 개수가 틀리고, 그 여파로 음까지 어긋남.</div>'
- +'<div class="cnote"><b>거꾸로 하면 무너져요 · </b>음높이부터 잡으면 음가를 배치할 틀이 없어 흔들려요. 리듬이 먼저 서 있어야 함.</div>'
- +'<p>청취마다 목표를 하나만 잡으것.</p>',
+{id:'w14',tr:'w',n:14,t:'통합 채보',lead:'리듬 골격 먼저, 그 위에 음높이.',
+ concept:'<p>지금까지 배운 것을 합침. <b>순서를 지키는 것</b>이 이 단계의 전부.</p>'
+ +'<div class="mh">리듬 파악</div>'
+ +'<table class="ctbl"><tr><th></th><th>할 일</th></tr>'
+ +'<tr><td><b>1</b></td><td>연필 놓고 전체를 두세 번 듣는다</td></tr>'
+ +'<tr><td><b>2</b></td><td>손으로 치며 <b>한 마디가 몇 박</b>인지 파악한다</td></tr>'
+ +'<tr><td><b>3</b></td><td>박이 <b>둘로 나뉘나 셋으로 나뉘나</b> 정한다 \u2014 박자표가 나옴</td></tr>'
+ +'<tr><td><b>4</b></td><td><b>꾸밈음을 가려낸다</b> \u2014 박을 차지하는가 스치는가</td></tr>'
+ +'<tr><td><b>5</b></td><td>오선보 마디 위에 <b>연하게 리듬형만</b> 그려 놓는다</td></tr></table>'
+ +'<div class="cnote"><b>4번이 5번보다 앞인 이유 · </b>스치는 꾸밈을 구조음으로 착각하면 <b>시작점 개수가 틀림</b>. 그 여파로 음높이까지 어긋남. 다만 <b>사선 없는 앞꾸밈음은 음가를 가지므로</b> 실음으로 셀 것.</div>'
+ +'<div class="mh">음정 찾기</div>'
+ +'<table class="ctbl"><tr><th></th><th>할 일</th></tr>'
+ +'<tr><td><b>6</b></td><td>쓰인 음을 모아 <b>음계</b>를 확인한다</td></tr>'
+ +'<tr><td><b>7</b></td><td><b>으뜸음</b>을 정하고 <b>조표</b>를 적는다 \u2014 끝음이 단서</td></tr>'
+ +'<tr><td><b>8</b></td><td>리듬형 위에 <b>음을 채운다</b> \u2014 윤곽 → 도수 → 음이름</td></tr>'
+ +'<tr><td><b>9</b></td><td>조에 없는 음은 <b>임시표</b>로, 꾸밈은 <b>기호</b>로 얹는다</td></tr>'
+ +'<tr><td><b>10</b></td><td>다시 들으면서 <b>검수</b>한다</td></tr></table>'
+ +'<div class="cnote"><b>거꾸로 하면 무너짐 · </b>음높이부터 잡으면 음가를 배치할 틀이 없어 흔들림. 리듬이 먼저 서 있어야 함.</div>'
+ +'<div class="cnote">청취마다 <b>목표를 하나만</b> 잡을 것. 이번엔 박자표, 다음엔 리듬, 그다음 음높이.</div>',
  ex:[['짧은 프레이즈 1','C4 E4 G4 E4 D4 C4'],['짧은 프레이즈 2','G4 F4 E4 D4 C4']],
  drill:{type:'integrate'},
  dict:{key:'C',keyPool:['C','G','F','Bb'],ts:[4,4],tsPool:[[2,4],[3,4],[4,4],[6,8],[9,8],[12,8]],bpm:84,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.25,0.5,1,1.5,2,3],beats:4,rest:true}},
@@ -1327,37 +1443,58 @@ var CUR=[
  +'<tr><td><b>7잇단</b></td><td>한 박을 <b>7</b>로 고르게</td><td>어디서나</td></tr></table>'
  +'<p>셋잇단과 두잇단은 <b>서로 빌려온</b> 것 — 2분박이 3분박의 분할을, 3분박이 2분박의 분할을 잠깐 빌려 씀. 5잇단·7잇단은 어느 쪽에도 없는 수라 그냥 <b>고르게 나눈</b> 것이고요.</p>'
  +'<div class="cnote"><b>표기 · </b>묶음 위에 숫자를 적음. 3, 5, 7. 숫자가 없으면 박자표가 정한 대로 나뉜다는 뜻임.</div>'
- +'<div class="cnote"><b>듣는 법 · </b>박은 그대로 유지되는데 <b>그 안이 평소보다 촘촘하거나 성김</b>. 4/4에서 셋잇단은 8분음표보다 조금 빠르고 16분음표보다 느림. 박을 손으로 치면서 그 사이에 몇 개가 들어가는지 세것.</div>'
++'<div class="mh">악보로 보면</div>'
+ +'<div class="tps"><div class="tp-l">셋잇단 — 4/4에서 한 박을 3으로</div><div class="staffbox" id="tpA"></div></div>'
+ +'<div class="tps"><div class="tp-l">5잇단 — 한 박을 5로</div><div class="staffbox" id="tpB"></div></div>'
+ +'<div class="tps"><div class="tp-l">7잇단 — 한 박을 7로</div><div class="staffbox" id="tpC"></div></div>'
+ +'<div class="tps"><div class="tp-l">두잇단 — 6/8에서 한 박을 2로</div><div class="staffbox" id="tpD"></div></div>'
+  +'<div class="cnote"><b>듣는 법 · </b>박은 그대로 유지되는데 <b>그 안이 평소보다 촘촘하거나 성김</b>. 4/4에서 셋잇단은 8분음표보다 조금 빠르고 16분음표보다 느림. 박을 손으로 치면서 그 사이에 몇 개가 들어가는지 세것.</div>'
  +'<div class="mh">헤미올라 — 박을 다르게 묶는다</div>'
  +'<p>쪼개는 게 아니라 <b>묶는</b> 문제임. 3:2 비율이고, 어원이 그리스어로 "한 배 반"임.</p>'
  +'<table class="ctbl"><tr><th>원래</th><th>헤미올라</th></tr>'
  +'<tr><td>6/8 = <b>3+3</b> (둘씩 묶인 큰 박 2개)</td><td><b>2+2+2</b>로 들림 (3/4 처럼)</td></tr>'
  +'<tr><td>3/4 두 마디 = 3+3</td><td>2+2+2 로 들림</td></tr></table>'
- +'<p>8분음표 <b>여섯 개는 그대로</b>인데 강세 자리만 옮겨져요. 그래서 박자표를 바꾸지 않고도 박이 바뀐 것처럼 들림.</p>'
+ +'<div class="tps"><div class="tp-l">6/8 원래 — 셋씩 두 묶음</div><div class="staffbox" id="tpE"></div></div>'
+ +'<div class="tps"><div class="tp-l">헤미올라 — 둘씩 세 묶음 (강세 이동)</div><div class="staffbox" id="tpF"></div></div>'
+ +'<p>8분음표 <b>여섯 개는 그대로</b>인데 강세 자리만 옮겨짐. 그래서 박자표를 바꾸지 않고도 박이 바뀐 것처럼 들림.</p>'
  +'<div class="cnote"><b>어디에 쓰나 · </b>바로크 음악의 <b>종지</b> 직전, 왈츠, 라틴 음악에 자주 나옴. 잠깐 걸렸다가 원래 박으로 돌아옴 \u2014 계속 그렇게 들리면 그건 헤미올라가 아니라 박자표를 잘못 적은 거임.</div>'
  +'<div class="cnote"><b>채보할 때 · </b>몇 마디 동안만 강세가 어긋나면 <b>박자표는 그대로 두고</b> 그 자리에 강세나 이음줄로 적으것. 박자표를 바꾸면 안 됨.</div>',
  ex:[['4/4 기본 (8분음표)','X'],['4/4 셋잇단','X'],['4/4 5잇단','X'],['6/8 기본 (3+3)','X'],['6/8 헤미올라 (2+2+2)','X']],
  exTuplet:[[4,4,2],[4,4,3],[4,4,5],[6,8,'norm'],[6,8,'hemi']],
+ draw:'tuplet',
  drill:{type:'tuplet'},
  dict:{key:'C',keyPool:['C','G','F'],ts:[4,4],tsPool:[[3,4],[4,4],[6,8]],bpm:84,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.25,0.5,1,1.5,2],beats:4,rest:true}},
 
 {id:'w17',tr:'w',n:17,t:'표현까지',lead:'아티큘레이션은 음가를 안 바꾼다. 마지막에 얹는다.',
  concept:'<p><b>아티큘레이션</b>은 음을 어떻게 소리 내는가임. 음높이도 음가도 바꾸지 않음.</p>'
+ +'<div class="mh">끊고 잇기</div>'
  +'<table class="ctbl"><tr><th>기호</th><th>이름</th><th>소리</th></tr>'
- +'<tr><td>.</td><td>스타카토</td><td>짧게 끊어</td></tr>'
- +'<tr><td>\u2312</td><td>레가토(슬러)</td><td>이어서 매끈하게</td></tr>'
- +'<tr><td>&gt;</td><td>악센트</td><td>그 음만 도드라지게</td></tr>'
- +'<tr><td>\u2013</td><td>테누토</td><td>음가를 꽉 눌러 채움</td></tr></table>'
- +'<div class="cnote"><b>왜 마지막이냐 · </b>꾸밈음과 달리 아티큘레이션은 <b>음가를 안 바꿔요</b>. 늦게 얹어도 채보가 안 틀어짐.</div>'
- +'<p>전 과정 순서 \u2014 박 → 분박 → 박자표 → 꾸밈 걸러내기 → 리듬 골격 → 으뜸음 → 음높이 → 기호 → 검산.</p>',
- ex:[['레가토','C4 D4 E4 F4 G4'],['스타카토','C4 D4 E4 F4 G4'],['악센트 (첫 음)','C4 D4 E4 F4 G4']],
- exArtic:['legato','stacc','accent'],
- exKey:['C','C','C'],
- exArt:[null,{all:'a.'},{first:'a>'}],
+ +'<tr><td><b>\u00B7</b></td><td>스타카토</td><td>짧게 끊어 \u2014 음가의 절반쯤</td></tr>'
+ +'<tr><td><b>\u25BE</b></td><td>스타카티시모</td><td>더 짧게 \u2014 점처럼</td></tr>'
+ +'<tr><td><b>\u2013</b></td><td>테누토</td><td>음가를 꽉 눌러 채움</td></tr>'
+ +'<tr><td><b>\u2013\u00B7</b></td><td>포르타토</td><td>이으면서도 살짝 눌러 구분</td></tr>'
+ +'<tr><td><b>\u2312</b></td><td>슬러 (레가토)</td><td>여러 음을 끊지 않고 이어서</td></tr></table>'
+ +'<div class="mh">세게 치기</div>'
+ +'<table class="ctbl"><tr><th>기호</th><th>이름</th><th>소리</th></tr>'
+ +'<tr><td><b>&gt;</b></td><td>악센트</td><td>그 음만 도드라지게</td></tr>'
+ +'<tr><td><b>^</b></td><td>마르카토</td><td>악센트보다 강하게, 짧게 끊어</td></tr>'
+ +'<tr><td><b>sf / sfz</b></td><td>스포르찬도</td><td>갑자기 세게</td></tr></table>'
+ +'<div class="cnote"><b>슬러와 붙임줄 · </b>모양이 같지만 다름. <b>붙임줄</b>은 <b>같은 음</b> 둘을 이어 하나로 만듦(음가가 더해짐). <b>슬러</b>는 <b>다른 음들</b>을 끊지 않고 잇는 것(음가는 그대로).</div>'
+ +'<div class="mh">음가를 바꾸는 것 — 예외</div>'
+ +'<table class="ctbl"><tr><th>기호</th><th>이름</th><th>효과</th></tr>'
+ +'<tr><td><b>\uD834\uDD10</b></td><td>페르마타 (늘임표)</td><td>박을 <b>멈추고</b> 임의로 늘임</td></tr></table>'
+ +'<div class="cnote a">페르마타는 아티큘레이션이 아니라 <b>박 자체를 늘리는</b> 기호. 채보할 때 그 자리에서 박 세기를 멈추고 기호만 적을 것.</div>'
+ +'<div class="mh">셈여림 — 별개</div>'
+ +'<p>p·f·cresc. 같은 <b>셈여림</b>은 소리의 크기이며 아티큘레이션과 다른 층위. 역시 음가를 바꾸지 않으므로 마지막에 얹음.</p>'
+ +'<div class="cnote"><b>왜 마지막이냐 · </b>꾸밈음과 달리 아티큘레이션은 <b>음가를 안 바꿈</b>. 늦게 얹어도 채보가 안 틀어짐. 페르마타만 예외로 박에 영향을 줌.</div>'
+ +'<p>전 과정 순서 \u2014 박 → 분박 → 박자표 → 꾸밈 가려내기 → 리듬 골격 → 으뜸음 → 음높이 → 기호 → 검수.</p>',
+ ex:[['레가토','C4 D4 E4 F4 G4'],['스타카토','C4 D4 E4 F4 G4'],['테누토','C4 D4 E4 F4 G4'],['악센트 (첫 음)','C4 D4 E4 F4 G4'],['마르카토 (첫 음)','C4 D4 E4 F4 G4']],
+ exArtic:['legato','stacc','tenuto','accent','marcato'],
+ exKey:['C','C','C','C','C'],
+ exArt:[null,{all:'a.'},{all:'a-'},{first:'a>'},{first:'a^'}],
  drill:{type:'artic'},
  dict:{key:'C',keyPool:['C','G','F','Bb'],ts:[4,4],tsPool:[[2,4],[3,4],[4,4],[6,8],[9,8],[12,8]],bpm:92,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.25,0.5,0.75,1,1.5,2,3],beats:4,rest:true}},
 
-/* ── 산조 트랙 — 장단이 먼저 ── */
 {id:'s1',tr:'s',n:1,t:'장단과 박자표',lead:'산조 채보의 첫 단계. 장단이 박자표와 템포를 정한다.',
  concept:'<p>산조 채보도 <b>리듬부터</b>임. 그리고 국악에서 리듬의 단위는 <b>장단</b>임.</p>'
  +'<table class="ctbl"><tr><th>장단</th><th>분박</th><th>박자표</th><th>한 장단</th><th>템포</th></tr>'
@@ -1504,7 +1641,7 @@ function playEx(si,ei){
       var d4=t4+0.3;playBegin(d4);return d4;
     }
     var nb=C[0]/3,sp5=60/C[2],t5=0.12;
-    for(var p5=0;p5<nb;p5++){click(t5,p5===0?2:0);t5+=sp5;}
+    for(var p5=0;p5<4;p5++){click(t5,p5===0?2:0);t5+=sp5;}
     for(var r5=0;r5<2;r5++)for(var b5=0;b5<nb;b5++)for(var d5=0;d5<3;d5++){
       tone(midiOf(pn('G4')),t5,sp5/3*0.8,null,d5===0?0.26:0.16);t5+=sp5/3;}
     var dd5=t5+0.3;playBegin(dd5);return dd5;}
@@ -1520,8 +1657,9 @@ function playEx(si,ei){
       click(t6,s6===0);t6+=u;}
     playBegin(2.4);return 2.4;}
 
-  if(st.exOrn!==undefined&&st.exOrn[ei]){
-    var base=pnl(st.ex[ei][1]),o=st.exOrn[ei],sp=0.55,t=0.08,AT=2;
+  if(st.exOrn!==undefined&&ei<st.exOrn.length){
+    var base=pnl(st.ex[ei][1]),o=st.exOrn[ei],sp=0.55,AT=2;
+    var t=0.1;for(var pq=0;pq<4;pq++){click(t,pq===0?2:0);t+=sp;}
     for(var i=0;i<base.length;i++){
       var m=midiOf(base[i]);
       /* 짧은 앞꾸밈음 — 본음 앞을 스침 (음가 없음) */
@@ -1542,13 +1680,18 @@ function playEx(si,ei){
     playBegin(2.4);return 2.4;
   }
   if(st.exArtic&&st.exArtic[ei]){
-    var b=pnl(st.ex[ei][1]),a=st.exArtic[ei],sp2=0.45,tt=0.08;
+    var b=pnl(st.ex[ei][1]),a=st.exArtic[ei],sp2=0.45;
+    var tt=0.1;for(var pa=0;pa<4;pa++){click(tt,pa===0?2:0);tt+=sp2;}
     for(var j=0;j<b.length;j++){
-      var dur=(a==='stacc')?0.13:sp2*0.97;
-      var vol=(a==='accent'&&j===0)?0.34:0.2;
+      var dur,vol=0.2;
+      if(a==='stacc')dur=0.12;                 /* 짧게 끊어 */
+      else if(a==='tenuto'){dur=sp2*1.0;vol=0.24;}  /* 꽉 채움 */
+      else if(a==='marcato'){dur=sp2*0.55;vol=(j===0?0.4:0.2);}  /* 강하고 짧게 */
+      else if(a==='accent')vol=(j===0?0.38:0.2),dur=sp2*0.97;
+      else dur=sp2*0.97;                        /* 레가토 */
       tone(midiOf(b[j]),tt,dur,null,vol);tt+=sp2;
     }
-    playBegin(2.4);return 2.4;
+    var da=tt+0.3;playBegin(da);return da;
   }
   if(st.exMeter&&st.exMeter[ei]){
     var mt=st.exMeter[ei],nn=pnl(st.ex[ei][1]);
@@ -1902,10 +2045,15 @@ function genDrill(type){
       opts:op2,ans:op2.indexOf(P[1]),exp:P[1]};
   }
   if(type==='artic'){
-    var as=[['legato','\uB808\uAC00\uD1A0 (\uC774\uC5B4\uC11C)'],['stacc','\uC2A4\uD0C0\uCE74\uD1A0 (\uC9E7\uAC8C)'],['accent','\uC545\uC13C\uD2B8 (\uCCAB \uC74C \uAC15\uD558\uAC8C)']];
-    var AA=pick(as),op3=shuf(as.map(function(x){return x[1];}));
-    return{q:'\uC5B4\uB5A4 \uC8FC\uBC95\uC778\uAC00\uC694?',plays:[['\uB4E3\uAE30',{artic:AA[0]}]],
-      opts:op3,ans:op3.indexOf(AA[1]),exp:AA[1]+' \u2014 \uC74C\uAC00\uB294 \uC548 \uBC14\uB00C\uC5B4\uC694'};
+    var AR=[['legato','레가토 (이어서)'],['stacc','스타카토 (짧게)'],
+            ['tenuto','테누토 (꽉 채워)'],['marcato','마르카토 (강하고 짧게)']];
+    var A=pick(AR);
+    var opA=AR.map(function(x){return x[1];});
+    opA=shuf(opA);
+    return{q:'어떻게 소리 내고 있나요?',
+      plays:[['듣기',{artic:A[0]}]],
+      opts:opA,ans:opA.indexOf(A[1]),
+      exp:A[1]};
   }
   if(type==='cheong'){
     var C=pick(SANJO_CHEONG),op4=shuf(SANJO_CHEONG.map(function(x){return x[1];})).slice(0,4);
@@ -1949,12 +2097,33 @@ function midiToNote(m,pref){
   var t=(pref==='b')?fl[pc]:sh[pc];
   return{let:t[0],oct:oct,acc:t[1]};
 }
+/* 예비박 4개 — 모든 문제 공통. 반환값은 본문 시작 시각 */
+var PREMARK=[];
+function preBeats(t0,sp){
+  PREMARK=[];
+  for(var i=0;i<4;i++){click(t0+i*sp,i===0?2:0);PREMARK.push(t0+i*sp);}
+  return t0+4*sp;
+}
 function drillPlay(spec){
-  stopAll();ac();
+  stopAll();ac();PREMARK=[];
   var _d=0;
   if(Object.prototype.toString.call(spec)==='[object Array]'){return playSeq(spec,100);}
+  if(spec.artic){
+    var ba=pnl('C4 D4 E4 F4 G4'),sp0=0.45;
+    var ta=preBeats(0.1,sp0);
+    for(var ja=0;ja<ba.length;ja++){
+      var da2,va=0.2,a2=spec.artic;
+      if(a2==='stacc')da2=0.12;
+      else if(a2==='tenuto'){da2=sp0*1.0;va=0.24;}
+      else if(a2==='marcato'){da2=sp0*0.55;va=(ja===0?0.4:0.2);}
+      else da2=sp0*0.97;
+      tone(midiOf(ba[ja]),ta,da2,null,va);ta+=sp0;
+    }
+    playBegin(ta+0.3);return ta+0.3;
+  }
   if(spec.orn!==undefined){
-    var b=pnl('C4 E4 G4 E4'),t=0.08,sp=0.55,AT=2,o=spec.orn;
+    var b=pnl('C4 E4 G4 E4'),sp=0.55,AT=2,o=spec.orn;
+    var t=preBeats(0.1,sp);
     for(var i=0;i<b.length;i++){
       var m=midiOf(b[i]);
       if(o==='grace'&&i===AT){tone(m+2,t,0.09,null,0.16);t+=0.09;}
@@ -1971,33 +2140,35 @@ function drillPlay(spec){
     }
     playBegin(2.4);return 2.4;
   }
-  if(spec.pulse){var sp0=0.62,t0=0.1;for(var i=0;i<spec.pulse;i++){click(t0,i===0);t0+=sp0;}playBegin(2.2);return 2.2;}
-  if(spec.meterClick){var sp1=0.55,t1=0.1,mm=spec.meterClick;
+  if(spec.pulse){
+    var sp0=0.62,t0=preBeats(0.1,sp0);
+    for(var i=0;i<spec.pulse;i++){click(t0,i===0?2:0);t0+=sp0;}
+    playBegin(t0+0.3);return t0+0.3;}
+  if(spec.meterClick){var sp1=0.55,t1=preBeats(0.1,sp1),mm=spec.meterClick;
     for(var b1=0;b1<mm*3;b1++){var isD=(b1%mm===0);click(t1,isD);
       if(mm===4&&b1%mm===2)click(t1,false);t1+=sp1;}playBegin(2.2);return 2.2;}
   if(spec.noteval){
-    var bu2=spec.unit||1,sp2=0.62,t2=0.12;
-    for(var c2=0;c2<4;c2++)click(t2+c2*bu2*sp2,c2===0?2:0);
-    var st2=t2+4*bu2*sp2;
+    var bu2=spec.unit||1,sp2=0.62;
+    var st2=preBeats(0.12,bu2*sp2);
     tone(midiOf(pn('G4')),st2,spec.noteval*sp2*0.95);
     var dn2=st2+spec.noteval*sp2+0.35;
     playBegin(dn2);return dn2;}
-  if(spec.rpat){var sp3=0.62,t3=0.12;
-    for(var k3=0;k3<3;k3++)click(t3+k3*sp3*(spec.rpat.length?1:1),false);
-    var tt=0.12;
+  if(spec.rpat){
+    var sp3=0.62,tt=preBeats(0.12,sp3);
     for(var r3=0;r3<2;r3++){
-      click(tt,true);
       var off=tt;
-      for(var q3=0;q3<spec.rpat.length;q3++){tone(midiOf(pn('G4')),off,spec.rpat[q3]*sp3*0.8);off+=spec.rpat[q3]*sp3;}
+      for(var q3=0;q3<spec.rpat.length;q3++){
+        tone(midiOf(pn('G4')),off,spec.rpat[q3]*sp3*0.8,null,q3===0?0.28:0.17);
+        off+=spec.rpat[q3]*sp3;
+      }
       tt+=sp3;
     }playBegin(tt);return tt;}
-  if(spec.compound){var nb2=spec.compound/3,sp4=0.62,t4=0.1;
+  if(spec.compound){var nb2=spec.compound/3,sp4=0.62,t4=preBeats(0.1,sp4);
     for(var r4=0;r4<2;r4++)for(var b4=0;b4<nb2;b4++){
       for(var d4=0;d4<3;d4++){click(t4,d4===0&&b4===0);t4+=sp4/3;}
     }playBegin(t4);return t4;}
   if(spec.tup){
-    var n7=spec.tup,sp7=0.62,t7=0.12;
-    for(var p7=0;p7<4;p7++){click(t7,p7===0?2:0);t7+=sp7;}
+    var n7=spec.tup,sp7=0.62,t7=preBeats(0.12,sp7);
     for(var b7=0;b7<4;b7++){
       var cnt7=(b7===1||b7===3)?n7:2;
       for(var k7=0;k7<cnt7;k7++)
@@ -2007,8 +2178,7 @@ function drillPlay(spec){
     playBegin(t7);return t7;
   }
   if(spec.hemi!==undefined){
-    var u8=0.21,t8=0.12;
-    for(var p8=0;p8<2;p8++){click(t8,p8===0?2:0);t8+=u8*3;}
+    var u8=0.21,t8=preBeats(0.12,u8*3);
     for(var r8=0;r8<3;r8++){
       if(spec.hemi){
         for(var g8=0;g8<3;g8++)for(var s8=0;s8<2;s8++){
@@ -2023,7 +2193,7 @@ function drillPlay(spec){
     playBegin(t8);return t8;
   }
   if(spec.full){
-    var bu2=spec.full.bu,nb3=spec.full.beats,sp6=0.62,t6=0.1;
+    var bu2=spec.full.bu,nb3=spec.full.beats,sp6=0.62,t6=preBeats(0.1,bu2*sp6);
     for(var r6=0;r6<3;r6++)for(var b6=0;b6<nb3;b6++){
       var sub=(bu2===1.5)?3:2;
       for(var d6=0;d6<sub;d6++){
@@ -2033,9 +2203,12 @@ function drillPlay(spec){
     }
     playBegin(t6);return t6;
   }
-  if(spec.div){var sp2=0.62,t2=0.1;for(var b2=0;b2<4;b2++){for(var d=0;d<spec.div;d++){click(t2,d===0);t2+=sp2/spec.div;}}playBegin(t2);return t2;}
+  if(spec.div){
+    var sp2=0.62,t2=preBeats(0.1,sp2);
+    for(var b2=0;b2<4;b2++){for(var d=0;d<spec.div;d++){click(t2,d===0?1:0);t2+=sp2/spec.div;}}
+    playBegin(t2+0.3);return t2+0.3;}
   if(spec.group){
-    var u=0.24,t3=0.12;
+    var u=0.24,t3=preBeats(0.12,u*3);
     for(var r=0;r<3;r++)for(var g=0;g<spec.group.length;g++)for(var s=0;s<spec.group[g];s++){
       click(t3, s!==0?0:(g===0?2:1)); t3+=u;
     }
@@ -2914,7 +3087,7 @@ var METHOD=[{id:'m1',t:'리듬 파악하기',lead:'박을 잡고 리듬을 고�
  +handRow([[4,'4/4 · 12/8'],[3,'3/4 · 9/8'],[2,'2/4 · 6/8']])
  +'<div class="cnote">8분음표 계열인데 <b>느릴 때</b>는 손가락 셋으로 <b>한 박 안을</b> 셈. 박이 셋으로 나뉘는 것을 손으로 확인하는 것.</div>'
  +handRow([[3,'한 박 안 3분박']])
- +'<div class="cnote"><b>4·5단계를 나누는 이유 · </b>리듬과 음을 동시에 잡으려 하면 둘 다 놓쳐요. 리듬형을 연필로 흐리게 깔아 두면 음을 찾을 <b>틀</b>이 생김.</div>'},
+ +'<div class="cnote"><b>4·5단계를 나누는 이유 · </b>리듬과 음을 동시에 잡으려 하면 둘 다 놓침. 리듬형을 연필로 흐리게 깔아 두면 음을 찾을 <b>틀</b>이 생김.</div>'},
 
 {id:'m2',t:'음정 찾기',lead:'리듬형이 깔렸으니 그 위에 음을 올린다.',
  body:'<table class="ctbl"><tr><th></th><th>할 일</th></tr>'
@@ -3660,13 +3833,27 @@ function openLesson(i){
       ['박을 넘음',[0.5,1,1,1,1,0.5],[1,2,3,4],'붙임줄로 이음']
     ],{beats:4,unit:1.5});
   }
+  if(c.draw==='tuplet'){
+    drawTupletStaff('tpA','triplet');
+    drawTupletStaff('tpB','quintuplet');
+    drawTupletStaff('tpC','septuplet');
+    drawTupletStaff('tpD','duplet');
+    drawTupletStaff('tpE','hemi-norm');
+    drawTupletStaff('tpF','hemiola');
+  }
+  if(c.draw==='circle5'){
+    var c5=document.getElementById('circ5');
+    if(c5)c5.innerHTML=circle5SVG();
+  }
   if(c.draw==='ledger'){
     var lg=document.getElementById('ledg1');
     if(lg)lg.innerHTML=ledgerSVG();
   }
   if(c.draw==='interval'){
     var k1=document.getElementById('kb1'),k2=document.getElementById('kb2'),k3=document.getElementById('kb3');
-    if(k1)k1.innerHTML=keyboardSVG({lo:0,hi:7,mark:[0,1,2,3,4]});
+    if(k1)k1.innerHTML=keyboardSVG({lo:0,hi:7,mark:[0],
+      degs:['1도','2도','3도','4도','5도','6도','7도','8도'],
+      span:[0,7,'옥타브']});
     if(k2)k2.innerHTML='<div class="kbd-lab">C \u2192 E · 밝은 3도</div>'+keyboardSVG({lo:0,hi:4,mark:[0,2]});
     if(k3)k3.innerHTML='<div class="kbd-lab">C \u2192 E\u266D · 어두운 3도</div>'+keyboardSVG({lo:0,hi:4,mark:[0],black:[1]});
     var iv=document.getElementById('ivStaff');
