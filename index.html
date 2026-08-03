@@ -385,9 +385,11 @@ function tone(m,t0,dur,g,vol){
     o.frequency.setValueAtTime(f,t);
     if(g&&g.type==='bend'&&g.from!=null){
       var f0=freqOf(g.from)*parts[i][0];
+      var hold=(g.hold!=null?g.hold:0.5);        /* 앞 음 지속 비율 */
+      var fall=(g.fall!=null?g.fall:0.05);       /* 꺾는 속도(초) */
       o.frequency.setValueAtTime(f0,t);
-      o.frequency.setValueAtTime(f0,t+dur*0.62);
-      o.frequency.exponentialRampToValueAtTime(f,t+dur*0.62+0.07);
+      o.frequency.setValueAtTime(f0,t+dur*hold);
+      o.frequency.exponentialRampToValueAtTime(f,t+dur*hold+fall);
     }else if(g&&g.type==='slide'&&g.from!=null){
       var s0=freqOf(g.from)*parts[i][0];
       o.frequency.setValueAtTime(s0,t);
@@ -402,11 +404,21 @@ function tone(m,t0,dur,g,vol){
     o.start(t);o.stop(t+dur+0.05);oscs.push(o);
   }
   if(g&&g.type==='vib'){
-    var lfo=a.createOscillator();lfo.type='sine';lfo.frequency.value=(g.rate||5.2);
-    var lg=a.createGain();lg.gain.value=(g.depth||16);
-    lfo.connect(lg);
-    for(var k=0;k<oscs.length;k++)lg.connect(oscs[k].frequency);
-    lfo.start(t+dur*0.18);lfo.stop(t+dur+0.05);
+    /* 깊이를 센트로 지정하고 배음마다 비례 적용 — 얕아지지 않게 */
+    var cents=(g.cents!=null?g.cents:(g.depth!=null?g.depth*5:110));
+    var rate=(g.rate||4.6);
+    var t0v=t+dur*0.12;
+    for(var k=0;k<oscs.length;k++){
+      var lfo=a.createOscillator();lfo.type='sine';lfo.frequency.value=rate;
+      var base=freqOf(m)*parts[k][0];
+      var dev=base*(Math.pow(2,cents/1200)-1);
+      var lg=a.createGain();
+      /* 서서히 깊어짐 */
+      lg.gain.setValueAtTime(dev*0.35,t0v);
+      lg.gain.linearRampToValueAtTime(dev,t0v+Math.min(0.45,dur*0.3));
+      lfo.connect(lg);lg.connect(oscs[k].frequency);
+      lfo.start(t0v);lfo.stop(t+dur+0.05);
+    }
   }
   /* 숨소리 */
   var nb=a.createBufferSource();
@@ -1534,8 +1546,8 @@ var CUR=[
  +'<tr><td><b>요성</b></td><td>떠는청 G</td><td>폭넓게 떨기</td></tr></table>'
  +'<div class="cnote a"><b>서양과 다른 점 · </b>서양 장식음은 음가가 없어 <b>걸러내야</b> 했음. 산조는 <b>앞 음도 길게 쓰는 실음</b>이라 걸러낼 게 없음. 대신 <b>이동 방식을 읽어야</b> 함.</div>'
  +'<p>그래서 산조 채보에선 "장식음 걸러내기" 대신 <b>"꺾기냐 흘리기냐 요성이냐"</b>를 판별함. 판별은 <b>리듬보다 먼저</b>, 기호 표시는 맨 나중임.</p>',
- ex:[['꺾기 E\u266D→D','X'],['흘리기 F→E\u266D','X'],['요성 G','X'],['곧은 G (비교)','G4']],
- exSigim:['bend1','slide1','vib1',null],
+ ex:[['꺾기 E\u266D→D','X'],['윗꺾기 B\u266D→A','X'],['흘리기 F→E\u266D','X'],['요성 G','X'],['곧은 G (비교)','G4']],
+ exSigim:['bend1','bend2','slide1','vib1',null],
  sanjo:true,
  drill:{type:'sigim'},
  dict:{key:'Eb',ts:[12,8],bpm:72,pool:['C4','D4','Eb4','F4','G4','A4n','Bb4','C5'],durs:[0.5,1,1.5,3],beats:6,unit:0.5,rest:true,sanjo:true}},
@@ -1596,9 +1608,10 @@ function playEx(si,ei){
   var st=CUR[si];stopAll();ac();
   if(st.exSigim&&st.exSigim[ei]){
     var g=st.exSigim[ei];
-    if(g==='bend1'){tone(midiOf(pn('D4')),0.08,1.9,{type:'bend',from:midiOf(pn('Eb4'))});}
+    if(g==='bend1'){tone(midiOf(pn('D4')),0.08,1.9,{type:'bend',from:midiOf(pn('Eb4')),hold:0.45,fall:0.045});}
+    else if(g==='bend2'){tone(midiOf(pn('A4')),0.08,1.9,{type:'bend',from:midiOf(pn('Bb4')),hold:0.45,fall:0.045});}
     else if(g==='slide1'){tone(midiOf(pn('Eb4')),0.08,1.9,{type:'slide',from:midiOf(pn('F4'))});}
-    else if(g==='vib1'){tone(midiOf(pn('G4')),0.08,2.0,{type:'vib',depth:18,rate:5.0});}
+    else if(g==='vib1'){tone(midiOf(pn('G4')),0.08,2.2,{type:'vib',cents:135,rate:4.4});}
     playBegin(2.4);return 2.4;
   }
   if(st.exJang&&st.exJang[ei]){return playJangdan(st.exJang[ei]);}
@@ -2217,9 +2230,9 @@ function drillPlay(spec){
   if(spec.artic){var bb=pnl('C4 D4 E4 F4 G4'),t4=0.08,s4=0.45;
     for(var k=0;k<bb.length;k++){var du=(spec.artic==='stacc')?0.13:s4*0.97;var vo=(spec.artic==='accent'&&k===0)?0.34:0.2;tone(midiOf(bb[k]),t4,du,null,vo);t4+=s4;}playBegin(t4);return t4;}
   if(spec.sigim){
-    if(spec.sigim==='bend1')tone(midiOf(pn('D4')),0.08,1.8,{type:'bend',from:midiOf(pn('Eb4'))});
+    if(spec.sigim==='bend1')tone(midiOf(pn('D4')),0.08,1.8,{type:'bend',from:midiOf(pn('Eb4')),hold:0.45,fall:0.045});
     else if(spec.sigim==='slide1')tone(midiOf(pn('Eb4')),0.08,1.8,{type:'slide',from:midiOf(pn('F4'))});
-    else if(spec.sigim==='vib1')tone(midiOf(pn('G4')),0.08,1.9,{type:'vib',depth:18,rate:5.0});
+    else if(spec.sigim==='vib1')tone(midiOf(pn('G4')),0.08,1.9,{type:'vib',cents:135,rate:4.4});
     else tone(midiOf(pn('G4')),0.08,1.8);
     playBegin(2.0);return 2.0;
   }
