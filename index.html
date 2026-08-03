@@ -1167,7 +1167,7 @@ var CUR=[
  ex:[['느린 맥박','X'],['보통 맥박','X'],['빠른 맥박','X']],
  exPulse:[52,92,150],
  drill:{type:'beatcount'},
- dict:{key:'C',ts:[4,4],tsPool:[[2,4],[3,4],[4,4]],bpm:80,pool:['B4'],durs:[1,2],beats:4,rhythmOnly:true}},
+ dict:{key:'C',ts:[4,4],tsPool:[[2,4],[3,4],[4,4]],bpm:80,pool:['B4'],durs:[1,2],beats:4,bars:2,rhythmOnly:true}},
 
 {id:'w2',tr:'w',n:2,t:'으뜸음 찾기',lead:'조표만 보면 바로 나온다.',
  concept:'<p>악보를 펴면 제일 먼저 볼 것. <b>조표를 보고 조 이름을 찾음.</b> 규칙 두 줄이면 끝나요.</p>'
@@ -1217,7 +1217,7 @@ var CUR=[
  ex:[['2/4','X'],['3/4','X'],['4/4','X'],['6/8 (2박)','X'],['9/8 (3박)','X'],['12/8 (4박)','X']],
  exMeterFull:[[2,1],[3,1],[4,1],[2,1.5],[3,1.5],[4,1.5]],
  drill:{type:'meter'},
- dict:{key:'C',ts:[3,4],tsPool:[[2,4],[3,4],[4,4],[5,4],[6,4]],bpm:88,pool:['B4'],durs:[1,2,3],beats:3,rhythmOnly:true}},
+ dict:{key:'C',ts:[3,4],tsPool:[[2,4],[3,4],[4,4],[5,4],[6,4]],bpm:88,pool:['B4'],durs:[1,2,3],beats:3,bars:2,rhythmOnly:true}},
 
 {id:'w4',tr:'w',n:4,t:'2분박과 3분박',lead:'박이 어떻게 쪼개지는가. 박자표 체계 전체를 가름.',
  concept:'<p>박을 찾은 후 박이 어떻게 쪼개지는가를 파악하며, 이것이 박자표 체계 전체를 가른다.</p>'
@@ -1330,7 +1330,7 @@ var CUR=[
  ex:[['도 레 미','C4 D4 E4'],['미 레 도','E4 D4 C4'],['도 미 레 도','C4 E4 D4 C4']],
  draw:'ledger',
  drill:{type:'notename'},
- dict:{key:'C',ts:[4,4],tsPool:[[3,4],[4,4]],bpm:80,pool:['C4','D4','E4','F4','G4'],durs:[1,2],beats:4,labels:true}},
+ dict:{key:'C',ts:[4,4],tsPool:[[2,4],[3,4],[4,4]],bpm:80,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.5,1,2],beats:4,labels:true}},
 
 {id:'w10',tr:'w',n:10,t:'온음계 · 순차와 도약',lead:'도에서 높은 도까지. 옆 계단인가 건너뜀인가.',
  concept:'<p>한 옥타브 전부 \u2014 <b>도 레 미 파 솔 라 시 도</b>. 줄과 칸이 번갈아 오르는 계단임.</p>'
@@ -1363,7 +1363,7 @@ var CUR=[
  draw:'interval',
  ex:[['2도 (C\u2192D)','C4 D4'],['3도 (C\u2192E)','C4 E4'],['4도 (C\u2192F)','C4 F4'],['5도 (C\u2192G)','C4 G4'],['6도 (C\u2192A)','C4 A4'],['8도 (C\u2192C)','C4 C5'],['밝은 3도','C4 E4'],['어두운 3도','C4 Eb4']],
  drill:{type:'interval'},
- dict:{key:'C',ts:[4,4],tsPool:[[3,4],[4,4],[6,8]],bpm:86,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.5,1,1.5,2],beats:4,rest:true}},
+ dict:{key:'C',keyPool:['C','G','F'],ts:[4,4],tsPool:[[3,4],[4,4],[6,8]],bpm:86,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.5,1,1.5,2],beats:4,rest:true}},
 
 {id:'w12',tr:'w',n:12,t:'조표의 체계',lead:'붙는 순서와 5도권.',
  concept:'<p>\u266F\u00B7\u266D은 아무렇게나 붙지 않음. <b>순서가 고정</b>임.</p>'
@@ -1430,7 +1430,7 @@ var CUR=[
  ex:[['5/8 (3+2)','X'],['5/8 (2+3)','X'],['7/8 (3+2+2)','X'],['10/8 엇모리 (3+2+3+2)','X']],
  exGroup:[[3,2],[2,3],[3,2,2],[3,2,3,2]],
  drill:{type:'addmeter'},
- dict:{key:'C',ts:[5,8],bpm:78,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.5,1,1.5],beats:2.5,groups:[3,2],beamGroups:[[3,8],[2,8]],rest:true}},
+ dict:{key:'C',keyPool:['C','G','F'],ts:[5,8],bpm:78,pool:['C4','D4','E4','F4','G4','A4','B4','C5'],durs:[0.5,1,1.5],beats:2.5,groups:[3,2],beamGroups:[[3,8],[2,8]],rest:true}},
 
 {id:'w16',tr:'w',n:16,t:'잇단음표와 헤미올라',lead:'박자표는 그대로인데 리듬만 달라진다.',
  concept:'<p>둘 다 <b>박자표를 바꾸지 않음</b>. 박자표는 그대로 두고 <b>리듬형만</b> 달라짐. 그래서 앞의 박자표 이야기와는 다른 층위임.</p>'
@@ -1548,7 +1548,7 @@ var CUR=[
  ex:[['산조 프레이즈 1','C4 Eb4 F4 G4 F4 Eb4 D4 C4'],['산조 프레이즈 2','G4 Bb4 C5 Bb4 A4 G4 F4 G4']],
  sanjo:true,
  drill:{type:'sigim'},
- dict:{key:'Eb',ts:[12,8],tsPool:[[9,8],[12,8]],bpm:84,pool:['C4','D4','Eb4','F4','G4','A4n','Bb4','C5'],durs:[0.5,1,1.5,3],beats:6,unit:0.5,rest:true,sanjo:true}},
+ dict:{key:'Eb',ts:[12,8],tsPool:[[6,8],[9,8],[12,8]],bpm:84,pool:['C4','D4','Eb4','F4','G4','A4n','Bb4','C5'],durs:[0.5,1,1.5,3],beats:6,unit:0.5,rest:true,sanjo:true}},
 
 {id:'s5',tr:'s',n:5,t:'변청 — 조옮김',lead:'본청이 옮겨가도 청 사이 간격은 그대로.',
  concept:'<p><b>변청</b>은 본청이 다른 음으로 옮겨가는 거임. <b>청 사이 간격은 그대로</b>라 구조는 같음.</p>'
@@ -2330,8 +2330,11 @@ var DT={ans:null,inp:[],dur:1,acc:null,si:0,cfg:null};
 /* 박 단위 리듬 조립 */
 /* [패턴, 가중치] — 단순한 것이 자주 나오게 */
 var RPAT={
- 1:[[[1],5],[[0.5,0.5],4],[[0.75,0.25],2],[[0.5,0.25,0.25],1],[[0.25,0.25,0.5],1],[[0.25,0.25,0.25,0.25],1]],
- 1.5:[[[1.5],4],[[0.5,0.5,0.5],4],[[1,0.5],3],[[0.5,1],2],[[0.5,0.5,0.25,0.25],1]]
+ 1:[[[1],4],[[0.5,0.5],4],[[0.75,0.25],2],[[0.25,0.75],1],
+    [[0.5,0.25,0.25],2],[[0.25,0.25,0.5],2],[[0.25,0.5,0.25],1],
+    [[0.25,0.25,0.25,0.25],1]],
+ 1.5:[[[1.5],3],[[0.5,0.5,0.5],4],[[1,0.5],3],[[0.5,1],3],
+      [[0.5,0.5,0.25,0.25],1],[[0.25,0.25,0.5,0.5],1],[[0.5,0.25,0.25,0.5],1]]
 };
 function pickW(list){
   var tot=0,i;
@@ -2342,8 +2345,8 @@ function pickW(list){
 }
 /* 여러 박에 걸치는 패턴 — [음표들, 차지하는 박 수, 가중치] */
 var RMULTI={
- 1:[[[2],2,3],[[1.5,0.5],2,3],[[3],3,1],[[4],4,1]],
- 1.5:[[[3],2,2],[[4.5],3,1]]
+ 1:[[[2],2,3],[[1.5,0.5],2,3],[[0.5,1.5],2,2],[[3],3,1],[[2,1],3,1],[[1,2],3,1],[[4],4,1]],
+ 1.5:[[[3],2,2],[[1.5,1.5],2,1],[[4.5],3,1]]
 };
 function genRhythm(cfg){
   if(cfg.groups&&cfg.groups.length)return genRhythmGroups(cfg);
@@ -2456,9 +2459,27 @@ function dictCfg(base){
   }
   return cfg;
 }
+function melodySig(m){
+  var out=[];
+  for(var i=0;i<m.length;i++)out.push((m[i].n?m[i].n.let+m[i].n.oct+(m[i].n.acc||0):'r')+':'+m[i].d);
+  return out.join(',');
+}
 function newDict(si){
   var st=CUR[si],cfg=dictCfg(st.dict);DT.si=si;DT.cfg=cfg;
-  DT.ans=genMelody(cfg);DT.inp=[];DT.dur=cfg.durs[cfg.durs.length>2?1:0];DT.acc='key';DT.kind='note';DT.sel=-1;
+  if(!DT.recent)DT.recent={};
+  var rk=st.id||('s'+si),bag=DT.recent[rk]||[];
+  var cand=null;
+  for(var tryN=0;tryN<12;tryN++){
+    var c2=(tryN===0)?cfg:dictCfg(st.dict);
+    var m2=genMelody(c2),sg=melodySig(m2);
+    if(bag.indexOf(sg)<0){cand={m:m2,cfg:c2,sig:sg};break;}
+    cand={m:m2,cfg:c2,sig:sg};
+  }
+  cfg=cand.cfg;DT.cfg=cfg;
+  bag.push(cand.sig);
+  if(bag.length>6)bag.shift();
+  DT.recent[rk]=bag;
+  DT.ans=cand.m;DT.inp=[];DT.dur=cfg.durs[cfg.durs.length>2?1:0];DT.acc='key';DT.kind='note';DT.sel=-1;
   DT.ornAt=null;
   if(cfg.orn){
     DT.ornAt={};
