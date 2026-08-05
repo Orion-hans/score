@@ -1627,17 +1627,29 @@ function playEx(si,ei){
   if(st.exMeterFull){
     var M=st.exMeterFull[ei],nb=M[0],bu=M[1],sp=0.62,t=0.1;
     var sub=(bu===1.5)?3:2;
-    for(var r=0;r<3;r++)for(var b=0;b<nb;b++)for(var k=0;k<sub;k++){
-      click(t, k!==0?0:(b===0?2:1));
-      t+=bu*sp/sub;
+    for(var r=0;r<2;r++){
+      for(var b=0;b<nb;b++)for(var k=0;k<sub;k++){
+        click(t, k!==0?0:(b===0?2:1));
+        t+=bu*sp/sub;
+      }
+      t+=bu*sp*0.5;   /* 마디 사이 여백 — 마디가 끊겨 들리게 */
     }
-    return;
+    playBegin(t+0.3);return t+0.3;
   }
   if(st.exMeterClick){var mm=st.exMeterClick[ei],sp1=0.55,t1=0.1;
     for(var b=0;b<mm*4;b++){var d0=(b%mm===0);click(t1,d0);
       if(mm===4&&b%mm===2)click(t1,false);t1+=sp1;}playBegin(2.4);return 2.4;}
-  if(st.exDiv){var dv=st.exDiv[ei],bp=st.exDivBpm[ei],sp2=60/bp,t2=0.1;
-    for(var b2=0;b2<4*2;b2++){for(var k=0;k<dv;k++){click(t2,k===0&&b2%4===0);t2+=sp2/dv;}}playBegin(2.4);return 2.4;}
+  if(st.exDiv){
+    var dv=st.exDiv[ei],bp=st.exDivBpm[ei],sp2=60/bp,t2=0.1;
+    /* 마디 첫 박 2 · 그 밖의 박 머리 1 · 분할 0 — 박이 들려야 분할을 잰다 */
+    for(var r2=0;r2<2;r2++){
+      for(var b2=0;b2<4;b2++)for(var k=0;k<dv;k++){
+        click(t2, k!==0?0:(b2===0?2:1));
+        t2+=sp2/dv;
+      }
+      t2+=sp2*0.5;
+    }
+    playBegin(t2+0.3);return t2+0.3;}
   if(st.exVal){
     var arr=st.exVal[ei],sp3=0.62,tot=0,bu3=(st.exValUnit?st.exValUnit[ei]:1);
     for(var q=0;q<arr.length;q++)tot+=(arr[q]==='r'?1:arr[q]);
@@ -1662,8 +1674,10 @@ function playEx(si,ei){
     }
     var nb=C[0]/3,sp5=60/C[2],t5=0.12;
     for(var p5=0;p5<4;p5++){click(t5,p5===0?2:0);t5+=sp5;}
-    for(var r5=0;r5<2;r5++)for(var b5=0;b5<nb;b5++)for(var d5=0;d5<3;d5++){
-      tone(midiOf(pn('G4')),t5,sp5/3*0.8,null,d5===0?0.26:0.16);t5+=sp5/3;}
+    /* 한 마디만 — 박자표 숫자와 들리는 개수가 같아야 셀 수 있다 */
+    for(var b5=0;b5<nb;b5++)for(var d5=0;d5<3;d5++){
+      if(d5===0)click(t5,b5===0?2:1);
+      tone(midiOf(pn('G4')),t5,sp5/3*0.8,null,d5===0?0.3:0.16);t5+=sp5/3;}
     var dd5=t5+0.3;playBegin(dd5);return dd5;}
   if(st.exTuplet){
     var E=st.exTuplet[ei];
@@ -1672,10 +1686,17 @@ function playEx(si,ei){
     }
     drillPlay({tup:E[2]});playBegin(2.4);return 2.4;
   }
-  if(st.exGroup){var g=st.exGroup[ei],u=0.21,t6=0.1;
-    for(var r6=0;r6<3;r6++)for(var gi=0;gi<g.length;gi++)for(var s6=0;s6<g[gi];s6++){
-      click(t6,s6===0);t6+=u;}
-    playBegin(2.4);return 2.4;}
+  if(st.exGroup){
+    var g=st.exGroup[ei],u=0.24,t6=0.12;
+    /* 마디 첫 묶음 2 · 그 밖의 묶음 1 · 안쪽 0 — 3+2 와 2+3 이 갈리게 */
+    for(var r6=0;r6<2;r6++){
+      for(var gi=0;gi<g.length;gi++)for(var s6=0;s6<g[gi];s6++){
+        click(t6, s6!==0?0:(gi===0?2:1));
+        t6+=u;
+      }
+      t6+=u*1.2;
+    }
+    playBegin(t6+0.3);return t6+0.3;}
 
   if(st.exOrn!==undefined&&ei<st.exOrn.length){
     var base=pnl(st.ex[ei][1]),o=st.exOrn[ei],sp=0.55,AT=2;
@@ -1964,7 +1985,7 @@ function genDrill(type){
     var pats=[[[1],'4\uBD84\uC74C\uD45C \uD558\uB098'],[[0.5,0.5],'8\uBD84 2\uAC1C'],
               [[0.25,0.25,0.25,0.25],'16\uBD84 4\uAC1C'],[[0.75,0.25],'\uC8108\uBD84 + 16\uBD84']];
     var P=pick(pats),op3=shuf(pats.map(function(x){return x[1];}));
-    return{q:'\uD55C \uBC15 \uC548\uC758 \uB9AC\uB4EC \uD328\uD134\uC740?',plays:[['\uB4E3\uAE30',{rpat:P[0]}]],
+    return{q:'박 소리와 함께 들어보세요. <b>한 박 안</b>이 어떻게 나뉘나요?',plays:[['\uB4E3\uAE30',{rpat:P[0]}]],
       opts:op3,ans:op3.indexOf(P[1]),exp:P[1]};
   }
   if(type==='compound'){
@@ -2175,25 +2196,35 @@ function drillPlay(spec){
     var dn2=st2+spec.noteval*sp2+0.35;
     playBegin(dn2);return dn2;}
   if(spec.rpat){
+    /* 박 안의 분할을 묻는 문제 — 박 위치를 알아야 판단 가능하므로 박을 함께 친다 */
     var sp3=0.62,tt=preBeats(0.12,sp3);
-    for(var r3=0;r3<2;r3++){
+    for(var r3=0;r3<4;r3++){
+      click(tt,r3===0?2:1);
       var off=tt;
       for(var q3=0;q3<spec.rpat.length;q3++){
-        tone(midiOf(pn('G4')),off,spec.rpat[q3]*sp3*0.8,null,q3===0?0.28:0.17);
+        tone(midiOf(pn('G4')),off,spec.rpat[q3]*sp3*0.8,null,q3===0?0.3:0.18);
         off+=spec.rpat[q3]*sp3;
       }
       tt+=sp3;
     }playBegin(tt);return tt;}
-  if(spec.compound){var nb2=spec.compound/3,sp4=0.62,t4=preBeats(0.1,sp4);
-    for(var r4=0;r4<2;r4++)for(var b4=0;b4<nb2;b4++){
-      for(var d4=0;d4<3;d4++){click(t4,d4===0&&b4===0);t4+=sp4/3;}
-    }playBegin(t4);return t4;}
+  if(spec.compound){
+    var nb2=spec.compound/3,sp4=0.62,t4=preBeats(0.1,sp4);
+    for(var r4=0;r4<3;r4++)for(var b4=0;b4<nb2;b4++){
+      for(var d4=0;d4<3;d4++){
+        /* 마디 첫 박 2 · 그 밖의 박 머리 1 · 분할 0 */
+        click(t4, d4!==0?0:(b4===0?2:1));
+        t4+=sp4/3;
+      }
+    }
+    playBegin(t4+0.3);return t4+0.3;}
   if(spec.tup){
     var n7=spec.tup,sp7=0.62,t7=preBeats(0.12,sp7);
     for(var b7=0;b7<4;b7++){
       var cnt7=(b7===1||b7===3)?n7:2;
+      /* 한 박이 몇으로 나뉘는지 재는 문제 — 박이 들려야 한다 */
+      click(t7,b7===0?2:1);
       for(var k7=0;k7<cnt7;k7++)
-        tone(midiOf(pn('G4')),t7+k7*sp7/cnt7,sp7/cnt7*0.8,null,k7===0?0.28:0.16);
+        tone(midiOf(pn('G4')),t7+k7*sp7/cnt7,sp7/cnt7*0.8,null,k7===0?0.3:0.16);
       t7+=sp7;
     }
     playBegin(t7);return t7;
@@ -2203,10 +2234,12 @@ function drillPlay(spec){
     for(var r8=0;r8<3;r8++){
       if(spec.hemi){
         for(var g8=0;g8<3;g8++)for(var s8=0;s8<2;s8++){
+          if(s8===0)click(t8,g8===0?2:1);
           tone(midiOf(pn('G4')),t8,u8*0.8,null,s8===0?0.3:0.14);t8+=u8;
         }
       }else{
         for(var g9=0;g9<2;g9++)for(var s9=0;s9<3;s9++){
+          if(s9===0)click(t8,g9===0?2:1);
           tone(midiOf(pn('G4')),t8,u8*0.8,null,s9===0?0.3:0.14);t8+=u8;
         }
       }
